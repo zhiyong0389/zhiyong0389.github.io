@@ -12,12 +12,12 @@
 <p><img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022143416450-1403108370.png"></p>
 <p> 3.然后启动MySQL并查看状态</p>
 <p>命令：systemctl  start    mysqld </p>
-<p><img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022143737843-362703308.png"></p>
+<p><img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022143737843-362703308.png"></p>
 <p>4.使用mysql命令连接到MySQL服务，重设root的密码</p>
 <p>由于前一步启动的MySQL服务跳过了授权表，所以可以root从本机直接登录</p>
 <p>在命令行内直接输入mysql即可</p>
-<p><img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022144018897-1974187842.png"></p>
-<p> <img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022144118958-1077289640.png"></p>
+<p><img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022144018897-1974187842.png"></p>
+<p> <img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022144118958-1077289640.png"></p>
 <p> 5.进入 mysql&gt; 环境后，通过修改mysql库中user表的相关记录，重设root用户从本机登录的密码：</p>
 <pre><code class="shell">命令：update mysql.user set authentication\_string=password(&#39;123qqq...A&#39;)   where user=&#39;root&#39; and host=&#39;localhost&#39;;
 </code></pre>
@@ -26,13 +26,13 @@
 </code></pre>
 <p>然后输入  exit  退出mysql</p>
 <p>注意：通过执行“FLUSH PRIVILEGES;”可使授权表立即生效，对于正常运行的MySQL服务，也可以用上述方法来修改密码，不用重启服务。本例中因为是恢复密码，最好重启MySQL服务程序，所以上述“FLUSH PRIVILEGES;”操作可跳过。</p>
-<p><img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022144601843-1857481636.png"></p>
+<p><img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022144601843-1857481636.png"></p>
 <p> 6.重新以正常方式启动MySQL服务程序，验证新密码</p>
 <p>   如果前面是修改&#x2F;etc&#x2F;my.cnf配置的方法来跳过授权表，则重置root密码后，应去除相应的设置以恢复正常：</p>
-<p><img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022145107796-243878659.png"></p>
-<p> <img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022145416359-48273573.png"></p>
+<p><img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022145107796-243878659.png"></p>
+<p> <img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022145416359-48273573.png"></p>
 <p> 7.重置后的新密码，才能成功登入（试试新鲜出炉的密码吧）：</p>
-<p><img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022150054913-790665746.png"></p>
+<p><img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022150054913-790665746.png"></p>
 <p> OK！现在忘记密码如何重新设置已经完了，接下来就是root修改密码的三种方式：</p>
 <p>1.重置管理员root密码</p>
 <p>正常的前提是：已知当前MySQL管理用户（root）的密码。</p>
@@ -40,33 +40,33 @@
 <p>使用mysqladmin管理工具，需要验证旧的密码。比如，以下操作将会把root的密码设置为A…qqq321 ：</p>
 <pre><code class="shell">   命令：mysqladmin \-uroot \-p password &#39;A...qqq321&#39;
 </code></pre>
-<p><img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022150711613-494335476.png"></p>
-<p> <img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022153240511-1518018669.png"></p>
+<p><img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022150711613-494335476.png"></p>
+<p> <img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022153240511-1518018669.png"></p>
 <p>2.修改管理员root密码的其他方法（三种）</p>
 <p>1）方法1，以root登入mysql&gt; 后，使用set  password指令设置</p>
 <p>这个与新安装MySQL-server后首次修改密码时要求的方式相同，平时也可以用</p>
 <p>扩展一下（如果出现</p>
 <p>ERROR 3009 (HY000): Column count of mysql.user is wrong. Expected 45, found 42. Created with MySQL 50564, now running 50726. Please use mysql_upgrade to fix this error.        这种报错，是因为没更新数据库里的结构信息导致的，输入一行命令即可解决：mysql_upgrade    -uroot     -p’123qqq…A’） </p>
 <p>我是因为修改密码太多了，可能导致的报错，use用户表没更新又重新设置密码才会这样的</p>
-<p><img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022154404098-698281283.png"></p>
+<p><img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022154404098-698281283.png"></p>
 <p> 好了，刚才那种情况可能会出现，继续刚才的修改密码</p>
 <p>命令：set password for root@localhost&#x3D;password(‘1234567’);     </p>
-<p><img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022154628904-1170745315.png"></p>
+<p><img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022154628904-1170745315.png"></p>
 <p> 试验一下</p>
-<p><img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022155112875-1386322097.png"></p>
+<p><img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022155112875-1386322097.png"></p>
 <p>2）方法2，以root登入mysql&gt; 后，使用GRANT授权工具设置</p>
 <p>这个是最常见的用户授权方式：</p>
 <pre><code class="shell">命令： grant all ON \*.\* TO root@localhost identified by &#39;123qqq...A&#39;;
 </code></pre>
-<p><img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022155547164-1701188723.png"></p>
+<p><img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022155547164-1701188723.png"></p>
 <p>3）方法3，以root登入mysql&gt; 后，使用UPDATE更新相应的表记录</p>
 <p>这种方法与恢复密码时的操作相同：</p>
-<p><img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022160024155-713253008.png"></p>
-<p> <img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022160035243-1846686740.png"></p>
+<p><img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022160024155-713253008.png"></p>
+<p> <img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022160035243-1846686740.png"></p>
 <p> 在上述方法中，需要特别注意：当MySQL服务程序以 skip-grant-tables 选项启动时，如果未执行“FLUSH PRIVILEGES;”操作，是无法通过set  password或者grant方式来设置密码的。登录MySQL或者验证这两种方式时，都会看到ERROR 1045的报错：</p>
-<p><img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022160614156-1383446183.png"></p>
+<p><img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022160614156-1383446183.png"></p>
 <p>总结：。。。。。。。。。。（此处略省一万字）</p>
-<p>本文转自 <a target="_blank" rel="noopener" href="https://www.cnblogs.com/zgqbky/p/11720406.html">https://www.cnblogs.com/zgqbky/p/11720406.html</a>，如有侵权，请联系删除。</p>
+<p>本文转自 <a target="_blank" rel="noopener" href="http://www.cnblogs.com/zgqbky/p/11720406.html">http://www.cnblogs.com/zgqbky/p/11720406.html</a>，如有侵权，请联系删除。</p>
 </div><div class="article_tags"><span> <i class="yufont icon-tag"></i> 标签: </span><a href="/tags/mysql/">mysql</a></div></article><div class="article-copyright"><p>标题: <a href="/2023/03/11/mysql-forget-password/">mysql在忘记密码的情况下重置密码</a></p><p> 链接: <a href="/2023/03/11/mysql-forget-password/">https://zhiyong0389.github.io/2023/03/11/mysql-forget-password/</a></p><p> 版权声明: 若无特殊标注皆为 智勇 原创版权, 转载请以链接形式注明作者及原始出处</p><p>最后编辑时间: 2023-03-11</p></div><div class="page_turning"><a class="page_up" href="/2023/02/09/name/"
   style="background-image:url(https://pica.zhimg.com/v2-1c102e1652d2262a58262765669279ca_r.jpg?source=1940ef5c)">
   <div class="inner"><span>上一篇:</span>
