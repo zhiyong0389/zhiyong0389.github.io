@@ -1,0 +1,286 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="shortcut icon" href="/assets/imgs/favicon.ico" type="image/x-icon"><title>本地搭建helm的chart仓库 | 智勇</title><meta name="keywords" content="helm,k8s"><meta name="keywords" content="记录个人学习生活"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_3435803_wadmwlqwhps.css"><link rel="stylesheet" href="/style/index.css"><link rel="stylesheet" href="/assets/lib/prettify/prettify.css"><link rel="stylesheet" href="/assets/lib/fancybox/fancybox.css"><meta name="generator" content="Hexo 6.3.0"></head><body><div id="app"><header class="header yu13_p_30" id="header"><div class="header_left"><h1 class="yu13_logo"><a id="logo" href="/">智勇</a></h1></div><div class="header_right"><div class="header_search yu13_cursor yu13_hover" id="search"><i class="yufont icon-sousuo"></i></div><div class="line yu13_p_10"></div><nav class="header_nav"><ul class="nav"><li class="menu_nav"><a href="/"><i class="fas"></i><span> 首页</span></a></li><li class="menu_nav"><a href="/archives"><i class="fas"></i><span> 归档</span></a></li><li class="menu_nav"><a href="/categorys"><i class="fas"></i><span> 分类</span></a></li><li class="menu_nav"><a href="/tags"><i class="fas"></i><span> 标签</span></a></li><li class="menu_nav"><a href="/links"><i class="fas"></i><span> 友情链接</span></a></li></ul></nav></div></header><div class="article_topbg" style="background-image: url('/assets/imgs/top_bg.jpg')"><div class="topbg_container"><h1 class="title">本地搭建helm的chart仓库</h1><div class="info"><div class="article_meta"><div class="left"><span class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/><a href="/about">智勇</a></span><span><i class="yufont icon-yingyong"></i><span>暂无分类</span></span><span><i class="yufont icon-rili"></i>2023-3-11</span></div></div></div></div></div><div class="container log_container clearfix"><div class="article_content left"> <div class="article_main"><article class="content"><div class="content_text article_text"> <h1 id="1-自建-Chart-仓库"><a href="#1-自建-Chart-仓库" class="headerlink" title="1. 自建 Chart 仓库"></a>1. 自建 Chart 仓库</h1><p>由于 Chart 仓库可以是任何服务于 YAML 和 tar 文件并响应 GET 请求的 HTTP 服务器。因此在自己搭建 Chart 仓库时可以通过 Nginx 提供 HTTP 服务。</p>
+<h2 id="1-1-安装并启动-Nginx-服务器"><a href="#1-1-安装并启动-Nginx-服务器" class="headerlink" title="1.1. 安装并启动 Nginx 服务器"></a>1.1. 安装并启动 Nginx 服务器</h2><p>根据操作系统的发型版本不通，可以选择使用不同的工具来安装 Web 服务器。</p>
+<p>例如，在 CentOS7 系统中通过如下命令安装并启动基于 nginx 的 WEB 服务器。</p>
+<pre><code>$ yum install nginx -y
+$ systemctl enabled nginx
+$ systemctl start nginx
+</code></pre>
+<h2 id="1-2-制作-Chart-源"><a href="#1-2-制作-Chart-源" class="headerlink" title="1.2. 制作 Chart 源"></a>1.2. 制作 Chart 源</h2><p>作为 Chart 源下载的文件，需要将 Chart 目录按照格式 <code>&#123;&#123; .Chart.Name&#125;&#125;-&#123;&#123; .Chart.Version&#125;&#125;.tgz</code> 打包成 tgz 的包。</p>
+<p>可以使用 <code>helm package</code> 命令自动按照格式打包</p>
+<pre><code>$ helm package fantastic-charts/alpine/
+</code></pre>
+<p>Chart 源中除了各个应用的 Chart 包之外，还依赖 index.yaml 的索引文件。</p>
+<p>可以通过 <code>helm repo index</code> 命令来创建 index.yaml 文件，参考命令如：</p>
+<pre><code>$ mkdir fantastic-charts
+$ helm repo index fantastic-charts --url https://fantastic-charts.storage.googleapis.com
+</code></pre>
+<p><code>--url</code> 参数指定 Chart 源服务器地址，可以防止 Chart 源被非法引用。</p>
+<h2 id="1-3-复制到-Web-服务器"><a href="#1-3-复制到-Web-服务器" class="headerlink" title="1.3. 复制到 Web 服务器"></a>1.3. 复制到 Web 服务器</h2><p>将制作好的 Chart 包和 index.yaml 文件复制到 Web 服务器目录。</p>
+<p>确保 index.yaml 文件无需验证即可访问</p>
+<pre><code>$ mv fantastic-charts/* /var/www/web/
+</code></pre>
+<p>至此已经搭建好了一套 Chart 源服务。</p>
+<h2 id="1-4-测试验证"><a href="#1-4-测试验证" class="headerlink" title="1.4. 测试验证"></a>1.4. 测试验证</h2><p>添加该 Chart 源作为 repo</p>
+<pre><code>helm repo add myrepo https://fantastic-charts.storage.googleapis.com
+helm update
+</code></pre>
+<ul>
+<li><p><a target="_blank" rel="noopener" href="http://www.zhaowenyu.com/">CNCFSTACK</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/">文档首页</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/background/">Helm 背景</a></p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/background/helm-history.html">Helm 发展历程</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/background/helm-use-screen.html">Helm 最佳使用场景</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.zhaowenyu.com/cncf-solution/private-delivery/cloud-native-application-delivery.html">应用的交付形态与发展</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/background/helm-define-application.html">云原生应用的定义与交付</a></li>
+</ul>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/install/">Helm 安装升级</a></p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/install/helm2-install.html">Helm2 下载安装</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/install/helm3-install.html">Helm3 下载安装</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/install/helm2-upgrade.html">Helm3 升级</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/install/v2_v3_migration.html">Helm v2 迁移到 v3</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/install/helm-install-faq.html">Helm 安装升级 FAQ</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/install/helm-release-rule.html">Helm 版本发布策略</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/install/helm-k8s-version-relation.html">Helm 版本与 K8s 版本对应关系</a></li>
+</ul>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/usage/">Helm 使用</a></p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/usage/quickstart-helm2.html">Helm2 快速开始</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/usage/quickstart-helm3.html">Helm3 快速开始</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/usage/chart-repo.html">Chart 仓库管理</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/usage/chart-search.html">查找 Chart</a></li>
+<li>安装与卸载 Chart Release</li>
+<li>升级 Chart Release</li>
+</ul>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/files/">Helm 文件</a></p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/files/chart-values-yaml.html">values.yaml</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/files/chart-chart-yaml.html">Chart.yaml</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/files/chart-helmignore.html">.helmignore</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/files/chart-requirements-yaml.html">requirements.yaml</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/files/chart-lock-yaml.html">Chart.lock</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/files/chart-charts.html">charts&#x2F;</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/files/chart-crds.html">crds&#x2F;</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/files/chart-templates.html">templates&#x2F;</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/files/chart-notes-txt.html">templates&#x2F;NOTES.txt</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/files/templates-test.html">templates&#x2F;test&#x2F;</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/files/templates_help.html">templates&#x2F;_help.tpl</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/files/helm-index-yaml.html">index.yaml</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/files/values-schema-json.html">values.schema.json</a></li>
+</ul>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/chart/">Helm Chart 模板</a></p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/chart/charts_tips_and_tricks.html">Chart 开发提示和技巧</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/chart/chart-variables.html">变量</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/chart/dependency.html">依赖管理</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/chart/chart-hook.html">Hook</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/chart/chart-blankspace.html">控制空格</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/chart/chart-sync.html">同步 Chart 到仓库</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/chart/chart-github-auth-public.html">GitHub页面自动发布chart</a></li>
+</ul>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/objects/helm-object-readme.html">Chart 模板内置对象</a></p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/objects/helm-object-values.html">Values 对象</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/objects/helm-object-chart.html">Chart 对象</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/objects/helm-object-release.html">Release 对象</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/objects/helm-object-file.html">File 对象</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/objects/helm-object-capabilities.html">Capabilities 对象</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/objects/helm-object-template.html">Template 对象</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/objects/helm-object-name.html">Name 对象</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/objects/helm-object-basepath.html">BasePath 对象</a></li>
+</ul>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/">Chart 模板函数</a></p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/chart-flow-control.html">流程控制函数</a><ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/chart-if-else.html">if-else</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/chart-with.html">with</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/chart-range.html">range</a></li>
+</ul>
+</li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/chart-named-template.html">命名模板 函数</a><ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/chart-defind.html">define</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/chart-template.html">template</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/chart-include.html">include</a></li>
+<li>block</li>
+</ul>
+</li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/">spring 函数</a><ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/logic-and-flow-control-functions.html">逻辑和流程控制</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/string-functions.html">String 字符串函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/type-onversion-functions.html">类型转换函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/regular-expressions.html">Regular 正则表达式函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/cryptographic-and-security-functions.html">Crypt 加密函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/date-functions.html">Data 日期函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/dictionaries-and-dict-functions.html">Dict 字典函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/encoding-functions.html">Encoding 编码和解码函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/lists-and-list-functions.html">List 列表函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/math-functions.html">Math 数学函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/network-functions.html">NetWork 网络函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/file-path-functions.html">FilePath 文件路径函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/reflection-functions.html">Reflection 反射工具函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/url-functions.html">URL 函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/uuid-functions.html">UUID 函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/kubernetes-and-chart-functions.html">Kubernetes and Chart 函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/file-functions.html">File 文件函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/type-unctions.html">Type 数据类型函数</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/template-function/spring/semantic-version-functions.html">SemVer 2 版本函数</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/chart_best_practices/">Helm 最佳实践</a></p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/chart_best_practices/charts_tips_and_tricks.html">Chart 最佳实践技巧</a><ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/chart_best_practices/charts_rander_cm_range.html">Helm 按需渲染 CM</a></li>
+</ul>
+</li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/chart_best_practices/chart_standard.html">Chart 编写参考规范</a><ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/chart_best_practices/mult_charts_manager.html">多 Chart 集成管理</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/">Helm Chart 仓库</a></p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/create-chart-hub.html">自建 Chart 仓库</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/oss-host-chart.html">云托管 Chart 仓库</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/chart-museum.html">ChartMuseum 仓库</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/gitlab-chart.html">GitLab Chart 仓库</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/github-chart.html">Github Chart 仓库</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/harbor-chart.html">Harbor Chart 仓库</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/artifact-hub.html">Artifact Hub</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/manager-chart-repo.html">管理 Chart 仓库</a></li>
+</ul>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/plugin/">Helm 插件</a></p>
+</li>
+<li><p>Helm 社区</p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-glossary.html">Helm 名词</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/">Helm 命令</a></p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_completion.html">helm completion</a><ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_completion_bash.html">helm completion bash</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_completion_fish.html">helm completion fish</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_completion_powershell.html">helm completion powershell</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_completion_zsh.html">helm completion zsh</a></li>
+</ul>
+</li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_chart.html">helm chart</a><ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_chart_export.html">helm chart export</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_chart_list.html">helm chart list</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_chart_pull.html">helm chart pull</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_chart_push.html">helm chart push</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_chart_remove.html">helm chart remove</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_chart_save.html">helm chart save</a></li>
+</ul>
+</li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_create.html">helm create</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_delete.html">helm delete</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_dependency.html">helm dependency</a><ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_dependency_build.html">helm dependency build</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_dependency_list.html">helm dependency list</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_dependency_update.html">helm dependency update</a></li>
+</ul>
+</li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_env.html">helm env</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_get.html">helm get</a><ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_get_all.html">helm get all</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_get_hooks.html">helm get hooks</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_get_manifest.html">helm get manifest</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_get_notes.html">helm get notes</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_get_values.html">helm get values</a></li>
+</ul>
+</li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_history.html">helm history</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_init.html">helm init</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_inspect.html">helm inspect</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_install.html">helm install</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_lint.html">helm lint</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_list.html">helm list</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_package.html">helm package</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_plugin.html">helm plugin</a><ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_plugin_install.html">helm plugin install</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_plugin_list.html">helm plugin list</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_plugin_uninstall.html">helm plugin uninstall</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_plugin_update.html">helm plugin update</a></li>
+</ul>
+</li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_pull.html">helm pull</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_repo.html">helm repo</a><ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_repo_add.html">helm repo add</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_repo_index.html">helm repo index</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_repo_list.html">helm repo list</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_repo_remove.html">helm repo remove</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_repo_update.html">helm repo update</a></li>
+</ul>
+</li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_rollback.html">helm rollback</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_search.html">helm search</a><ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_search_hub.html">helm search hub</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_search_repo.html">helm search repo</a></li>
+</ul>
+</li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_show.html">helm show</a><ul>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_show_all.html">helm show all</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_show_chart.html">helm show chart</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_show_crds.html">helm show crds</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_show_readme.html">helm show readme</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_show_values.html">helm show values</a></li>
+</ul>
+</li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_status.html">helm status</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_template.html">helm template</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_test.html">helm test</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_uninstall.html">helm uninstall</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_upgrade.html">helm upgrade</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_verify.html">helm verify</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-cmd/helm_version.html">helm version</a></li>
+</ul>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-faq.html">Helm FAQ</a></p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.gitbook.com/">本书使用 GitBook 发布</a></p>
+</li>
+</ul>
+<p>本文转自 <a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-doc/hub/create-chart-hub.html">https://www.zhaowenyu.com/helm-doc/hub/create-chart-hub.html</a>，如有侵权，请联系删除。</p>
+</div><div class="article_tags"><span> <i class="yufont icon-tag"></i> 标签: </span><a href="/tags/helm-k8s/">helm,k8s</a></div></article><div class="article-copyright"><p>标题: <a href="/2023/03/11/helm-chart-hub/">本地搭建helm的chart仓库</a></p><p> 链接: <a href="/2023/03/11/helm-chart-hub/">https://zhiyong0389.github.io/2023/03/11/helm-chart-hub/</a></p><p> 版权声明: 若无特殊标注皆为 智勇 原创版权, 转载请以链接形式注明作者及原始出处</p><p>最后编辑时间: 2023-03-11</p></div><div class="page_turning"><a class="page_up" href="/2023/03/11/helm-install-wordpress/"
+  style="background-image:url(https://help-static-aliyun-doc.aliyuncs.com/assets/img/zh-CN/4780208061/p200143.png" alt="36)">
+  <div class="inner"><span>上一篇:</span>
+    <p>helm安装WordPress</p>
+  </div>
+</a>
+<a class="page_down" href="javascript:;"
+style="background-image:url(/assets/images/random/28.jpg)">
+<div class="inner"><span>下一篇:</span>
+  <p>已经没有下一篇了</p>
+</div>
+</a>
+</div></div></div><div class="article_sidebar left"><div class="author_sidebar sidebar_container"><div class="author_info"><div class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/></div><div class="author_name"><h3><a href="/about">智勇</a></h3><p>不断学习，不断提升！</p></div></div><div class="author_data"><ul><li> <div> <span>23</span><p>文章</p></div></li><li> <div> <span>0</span><p>分类</p></div></li><li> <div> <span>8</span><p>标签</p></div></li></ul></div></div><div class="catalogue sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-feiji"></i>目录</h3><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E8%87%AA%E5%BB%BA-Chart-%E4%BB%93%E5%BA%93"><span class="toc-number">1.</span> <span class="toc-text">1. 自建 Chart 仓库</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-1-%E5%AE%89%E8%A3%85%E5%B9%B6%E5%90%AF%E5%8A%A8-Nginx-%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="toc-number">1.1.</span> <span class="toc-text">1.1. 安装并启动 Nginx 服务器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1-2-%E5%88%B6%E4%BD%9C-Chart-%E6%BA%90"><span class="toc-number">1.2.</span> <span class="toc-text">1.2. 制作 Chart 源</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1-3-%E5%A4%8D%E5%88%B6%E5%88%B0-Web-%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="toc-number">1.3.</span> <span class="toc-text">1.3. 复制到 Web 服务器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1-4-%E6%B5%8B%E8%AF%95%E9%AA%8C%E8%AF%81"><span class="toc-number">1.4.</span> <span class="toc-text">1.4. 测试验证</span></a></li></ol></li></ol></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-24gl-folderOpen"></i>分类</h3><div class="archive_lists"><ul class="category-list"></ul></div></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-tag"></i>标签</h3><a href="/tags/Kubernetes/" style="font-size: 18.67px;">Kubernetes</a> <a href="/tags/ServiceMesh/" style="font-size: 16px;">ServiceMesh</a> <a href="/tags/helm-k8s/" style="font-size: 17.33px;">helm,k8s</a> <a href="/tags/hexo-github%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" style="font-size: 20px;">hexo+github搭建博客</a> <a href="/tags/kubernetes/" style="font-size: 16px;">kubernetes</a> <a href="/tags/linux/" style="font-size: 17.33px;">linux</a> <a href="/tags/mysql/" style="font-size: 16px;">mysql</a> <a href="/tags/openstack/" style="font-size: 17.33px;">openstack</a></div></div></div><footer class="footer"> <div class="footer_bottom"><div class="footer_box"><div class="copy"><span>主题</span><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn">Hexo</a><span>模板</span><a href="/">智勇</a></div><div class="copy"><span>© 2023<a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/#/Integrated/index">豫ICP备2023014079号-1</a></span></div></div></div></footer><html><head></head><body><span id="span"></span><script type="text/javascript">function runtime(){
+        // 初始时间，日/月/年 时:分:秒
+        X = new Date("01/01/2023 8:32:00");
+        Y = new Date();
+        T = (Y.getTime()-X.getTime());
+        M = 24*60*60*1000;
+        a = T/M;
+        A = Math.floor(a);
+        b = (a-A)*24;
+        B = Math.floor(b);
+        c = (b-B)*60;
+        C = Math.floor((b-B)*60);
+        D = Math.floor((c-C)*60);
+        //信息写入到DIV中
+        span.innerHTML = "本站勉强运行: "+A+"天"+B+"小时"+C+"分"+D+"秒"
+    }
+    setInterval(runtime, 1000);
+</script></body></html><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"> </script><script src="/assets/lib/prettify/prettify.js"> </script><script src="/assets/lib/fancybox/fancybox.js"> </script><script src="/assets/js/app.js"> </script></div></body></html>

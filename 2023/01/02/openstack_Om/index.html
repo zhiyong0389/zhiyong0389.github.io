@@ -1,0 +1,626 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="shortcut icon" href="/assets/imgs/favicon.ico" type="image/x-icon"><title>openstack运维题 | 智勇</title><meta name="keywords" content="openstack"><meta name="keywords" content="记录个人学习生活"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_3435803_wadmwlqwhps.css"><link rel="stylesheet" href="/style/index.css"><link rel="stylesheet" href="/assets/lib/prettify/prettify.css"><link rel="stylesheet" href="/assets/lib/fancybox/fancybox.css"><meta name="generator" content="Hexo 6.3.0"></head><body><div id="app"><header class="header yu13_p_30" id="header"><div class="header_left"><h1 class="yu13_logo"><a id="logo" href="/">智勇</a></h1></div><div class="header_right"><div class="header_search yu13_cursor yu13_hover" id="search"><i class="yufont icon-sousuo"></i></div><div class="line yu13_p_10"></div><nav class="header_nav"><ul class="nav"><li class="menu_nav"><a href="/"><i class="fas"></i><span> 首页</span></a></li><li class="menu_nav"><a href="/archives"><i class="fas"></i><span> 归档</span></a></li><li class="menu_nav"><a href="/categorys"><i class="fas"></i><span> 分类</span></a></li><li class="menu_nav"><a href="/tags"><i class="fas"></i><span> 标签</span></a></li><li class="menu_nav"><a href="/links"><i class="fas"></i><span> 友情链接</span></a></li></ul></nav></div></header><div class="article_topbg" style="background-image: url('/assets/imgs/top_bg.jpg')"><div class="topbg_container"><h1 class="title">openstack运维题</h1><div class="info"><div class="article_meta"><div class="left"><span class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/><a href="/about">智勇</a></span><span><i class="yufont icon-yingyong"></i><span>暂无分类</span></span><span><i class="yufont icon-rili"></i>2023-1-2</span></div></div></div></div></div><div class="container log_container clearfix"><div class="article_content left"> <div class="article_main"><article class="content"><div class="content_text article_text"> <h2 id="一、私有云运维"><a href="#一、私有云运维" class="headerlink" title="一、私有云运维"></a>一、私有云运维</h2><h4 id="1、cinder创建硬盘"><a href="#1、cinder创建硬盘" class="headerlink" title="1、cinder创建硬盘"></a>1、cinder创建硬盘</h4><h4 id="2、heat安装"><a href="#2、heat安装" class="headerlink" title="2、heat安装"></a>2、heat安装</h4><h4 id="3、镜像管理"><a href="#3、镜像管理" class="headerlink" title="3、镜像管理"></a>3、镜像管理</h4><h4 id="4、网络管理"><a href="#4、网络管理" class="headerlink" title="4、网络管理"></a>4、网络管理</h4><h4 id="5、云主机管理"><a href="#5、云主机管理" class="headerlink" title="5、云主机管理"></a>5、云主机管理</h4><h4 id="6、快照管理"><a href="#6、快照管理" class="headerlink" title="6、快照管理"></a>6、快照管理</h4><h4 id="7、数据库安装"><a href="#7、数据库安装" class="headerlink" title="7、数据库安装"></a>7、数据库安装</h4><p>1、安装完后登入数据库中创建chinaskilldb库，在chinaskilldb库中创建表testable (id int not null primary key,Teamname varchar(50), remarks varchar(255))，在表中插入记录(1,“cloud”,“chinaskill”)。<br>2、将memcached的缓存大小从64Mib改成256Mib。<br>3、使用命令 创建用户chinaskill，并设置Administrators限权<br>完成后提交控制节点的用户名、密码和IP地址到答题框。</p>
+<h4 id="8、keystone安装"><a href="#8、keystone安装" class="headerlink" title="8、keystone安装"></a>8、keystone安装</h4><p>在controller节点上使用iaas-install-keystone.sh 脚本安装Keystone服务。创建一个用户chinaskill完成后提交控制节点的用户名、密码和IP地址到答题框。</p>
+<h4 id="9、heat模板管理"><a href="#9、heat模板管理" class="headerlink" title="9、heat模板管理"></a>9、heat模板管理</h4><p>在openstack私有云平台上，在&#x2F;root目录下编写模板server.yaml，创建名为“m1.flavor”、 ID 为 1234、内存为1024MB、硬盘为20GB、vcpu数量为 1的云主机类型。完成后提交控制节点的用户名、密码和IP地址到答题框。（在提交信息前请准备好yaml模板执行的环境）</p>
+<pre><code class="powershell">[root@controller ~]# cat server.yaml 
+heat_template_version: 2014-10-16
+description: deploy a single flavor
+resources:
+  server:
+    type: OS::Nova::Flavor
+    properties:
+      disk: 20
+      flavorid: 1234
+      name: m1.flavor
+      ram: 1024
+      vcpus: 1
+
+[root@controller ~]# openstack stack create -t server.yaml test1
+</code></pre>
+<h4 id="10、openstack动态调整云主机类型"><a href="#10、openstack动态调整云主机类型" class="headerlink" title="10、openstack动态调整云主机类型"></a>10、openstack动态调整云主机类型</h4><p>动态将云主机类型调整为2核2G内存 云主机类型。</p>
+<pre><code class="powershell">修改controller和各个computer节点的nova.cnf文件
+[root@controller ~]# vim /etc/nova/nova.conf
+[DEFAULT]
+allow_resize_to_same_host=True
+scheduler_default_filters=RetryFilter,AvailabilityZoneFilter,RamFilter,ComputeFilter,ComputeCapabilitiesFilter,ImagePropertiesFilter,ServerGroupAntiAffinityFilter,ServerGroupAffinityFilter
+
+[root@controller ~]# systemctl restart openstack-nova-api.service openstack-nova-scheduler.service openstack-nova-conductor.service openstack-nova-novncproxy.service
+
+[root@compute ~]# systemctl restart libvirtd.service openstack-nova-compute.service
+
+需要把云主机关机，然后进行调整云主机类型，需要进行确认。
+</code></pre>
+<h4 id="10、swift作为glance镜像服务的后端存储"><a href="#10、swift作为glance镜像服务的后端存储" class="headerlink" title="10、swift作为glance镜像服务的后端存储"></a>10、swift作为glance镜像服务的后端存储</h4><p>使用swift对象存储作为glance镜像服务的后端存储。</p>
+<pre><code class="bash">[root@controller ~]# cat /etc/glance/glance-api.conf |egrep -v  &#39;^$|^#&#39;
+[glance_store]
+stores =  glance.store.swift.Store
+default_store = swift
+swift_store_region = RegionOne
+swift_store_endpoint_type = internalURL
+swift_store_container = glance
+swift_store_large_object_size = 5120
+swift_store_large_object_chunk_size = 200
+swift_store_create_container_on_put = True
+swift_store_multi_tenant = True
+swift_store_admin_tenants = service
+swift_store_auth_address = http://controller:5000/v3.0/
+swift_store_user = glance
+swift_store_key = 000000
+
+上传镜像之后，验证
+[root@controller ~]# openstack container list
+</code></pre>
+<h4 id="11、云平台安全策略提升，openstack中http转https"><a href="#11、云平台安全策略提升，openstack中http转https" class="headerlink" title="11、云平台安全策略提升，openstack中http转https"></a>11、云平台安全策略提升，openstack中http转https</h4><pre><code class="powershell">[root@controller ~]# yum install -y mod_wsgi mod_ssl
+
+
+[root@controller ~]# vim /etc/httpd/conf.d/ssl.conf 
+
+75行  SSLProtocol all -SSLv2 -SSLv3  删除-SSLv3
+
+
+[root@controller ~]#  vim /etc/openstack-dashboard/local_settings 
+
+49行起
+
+CSRF_COOKIE_SECURE = True    取消注释
+SESSION_COOKIE_SECURE = True  取消注释
+USE_SSL = True           添加该行
+SESSION_COOKIE_HTTPONLY = True  添加该行
+
+
+[root@controller ~]# systemctl restart httpd memcached
+  272  history
+  
+可以用https访问   https://192.168.100.10/dashboard
+</code></pre>
+<h4 id="12、python-程序对接openstack-api"><a href="#12、python-程序对接openstack-api" class="headerlink" title="12、python 程序对接openstack api"></a>12、python 程序对接openstack api</h4><p>在 controller 节点的&#x2F;root 目录下编写 Python 程序 create_flavor.py 文件，对接 openstack api,，创建一个云主机类型 centos7：vcpu 为 2 个、内存为 2048M、硬盘大小 40G。</p>
+<pre><code class="powershell">解压，配Python源
+1、yum install -y python3
+2、pip3 install certifi-2019.11.28-py2.py3-none-any.whl 
+3、pip3 install urllib3-1.25.11-py3-none-any.whl 
+4、pip3 install idna-2.8-py2.py3-none-any.whl 
+5、pip3 install chardet-3.0.4-py2.py3-none-any.whl
+6、pip3 install requests-2.24.0-py2.py3-none-any.whl 
+
+
+[root@controller ~]# cat create_flavor.py
+
+import requests
+import json
+osurl = &quot;http://192.168.100.10&quot;
+body=&#123;
+    &quot;auth&quot;:&#123;
+        &quot;identity&quot;:&#123;
+            &quot;methods&quot;:[&quot;password&quot;],
+            &quot;password&quot;:&#123;
+                &quot;user&quot;:&#123;
+                    &quot;id&quot;:&quot;d618c8ee2d234997889b62ee18562ee0&quot;,
+                    &quot;password&quot;:&quot;000000&quot;
+                &#125;
+            &#125;
+        &#125;,
+        &quot;scope&quot;:&#123;
+            &quot;project&quot;:&#123;
+                &quot;id&quot;:&quot;5e7709cbbd7c4c0e8733c3f7360d1d38&quot;
+            &#125;
+        &#125;
+    &#125;
+&#125;
+headers = &#123;&#125;
+def get_token():
+    url = osurl+&quot;:5000/v3/auth/tokens&quot;
+    re = requests.post(url,headers=headers,data=json.dumps(body)).headers[&quot;X-Subject-Token&quot;]
+    return re
+def flavor_create():
+    url = osurl+&quot;:8774/v2.1/flavors&quot;
+    headers[&quot;X-Auth-Token&quot;] = get_token()
+    body = &#123;
+        &quot;flavor&quot;:&#123;
+            &quot;name&quot;: &quot;centos7&quot;,
+            &quot;id&quot;: 302,
+            &quot;vcpus&quot;: 2,
+            &quot;ram&quot;: 2048,
+            &quot;disk&quot;: 40,
+        &#125;
+    &#125;
+    re = requests.post(url,data=json.dumps(body),headers=headers).json()
+    print(re)
+    return re
+flavor_create()
+</code></pre>
+<h4 id="13、创建云主机命令"><a href="#13、创建云主机命令" class="headerlink" title="13、创建云主机命令"></a>13、创建云主机命令</h4><pre><code class="powershell">#1.1、创建外网
+openstack network create --share --external --provider-physical-network provider --provider-network-type flat pb1
+
+# --share 允许所有项目都可以使用该网络
+# --external 定义连通外部的虚拟网络
+# --provider-physical-network 指定物理网络的提供者，由ml2_conf.ini文件的flat_networks确定
+# --provider-network-type flat 映射到虚拟主机的网卡eth0，由linuxbridge_agent.ini文件中的physical_interface_mappings确定
+##openstack network create --share --external --provider-physical-network provider --provider-network-type flat provider
+
+#1.2、创建外网子网
+openstack subnet create --network pb1 --allocation-pool start=192.168.121.100,end=192.168.121.200 --gateway 192.168.121.2 --dns-nameserver 114.114.114.114 --subnet-range 192.168.121.0/24 pb1-sn1
+
+
+#2.1、创建内网
+openstack network create --share --internal --provider-physical-network provider --provider-network-type vlan sn-1
+
+#2.2   创建内网的子网
+openstack subnet create --network sn-1 --allocation-pool start=10.10.10.100,end=10.10.10.200 --gateway 10.10.10.1 --dns-nameserver 114.114.114.114 --subnet-range 10.10.10.0/24 sn-s1
+
+#3、上传镜像
+glance image-create --name centos7.5 --disk-format=qcow2 --container-format=bare --visibility=public --file /opt/iaas/images/CentOS_7.5_x86_64_XD.qcow2
+
+#4、创建实例-云主机类型
+openstack flavor create --id 0 --vcpus 2 --ram 2048 --disk 20 m1
+
+#5、创建云主机
+openstack server create --flavor m1 --image centos7.5 --nic net-id=&#39;61267aba-282b-4802-8429-3e94044145b9&#39;  c1
+</code></pre>
+<h4 id="14、heat模板管理2"><a href="#14、heat模板管理2" class="headerlink" title="14、heat模板管理2"></a>14、heat模板管理2</h4><h5 id="14-1-创建网络模板"><a href="#14-1-创建网络模板" class="headerlink" title="14.1  创建网络模板"></a>14.1  创建网络模板</h5><p>编写Heat模板create_net.yaml，创建名为Heat-Network网络，选择不共享；创建子网名为Heat-Subnet，子网网段设置为10.20.2.0&#x2F;24，开启DHCP服务，地址池为10.20.2.20-10.20.2.100。模板内容如下：</p>
+<pre><code class="powershell">[root@controller ~]# cat create_net.yaml
+
+heat_template_version: 2014-10-16
+
+description: Generated template
+
+resources:
+  network_1:
+    type: OS::Neutron::Net
+    properties:
+      admin_state_up: true
+      name: Heat-Network
+      shared: false
+
+  subnet_1:
+    type: OS::Neutron::Subnet
+    properties:
+      allocation_pools:
+      - end: 10.20.2.100
+        start: 10.20.2.10
+      cidr: 10.20.2.0/24
+      enable_dhcp: true
+      host_routes: []
+      ip_version: 4
+      name: Heat-Subnet
+      network_id:
+        get_resource: network_1
+        
+
+
+[root@controller ~]# openstack stack create -t create_net.yaml test2
+[root@controller ~]# openstack network list
+</code></pre>
+<h5 id="14-2-创建用户模板"><a href="#14-2-创建用户模板" class="headerlink" title="14.2 创建用户模板"></a>14.2 创建用户模板</h5><p>编写Heat模板create_user.yaml，创建名为heat-user的用户，属于admin项目包，并赋予heat-user用户admin的权限，配置用户密码为123456。模板内容如下：</p>
+<pre><code class="powershell">[root@controller ~]# cat create_user.yaml
+heat_template_version: 2014-10-16
+resources:
+  user:
+    type: OS::Keystone::User
+    properties:
+      name: heat-user
+      password: &quot;123456&quot;
+      domain: demo
+      default_project: admin
+      roles: [&#123;&quot;role&quot;: admin, &quot;project&quot;: admin&#125;]
+      
+      
+[root@controller heat]# openstack stack create -t create_user.yaml test-user
++---------------------+--------------------------------------+
+| Field               | Value                                |
++---------------------+--------------------------------------+
+| id                  | dc70f9dc-f784-4eff-beae-f541a97b455d |
+| stack_name          | test-user                            |
+| description         | No description                       |
+| creation_time       | 2021-08-05T07:52:00Z                 |
+| updated_time        | None                                 |
+| stack_status        | CREATE_IN_PROGRESS                   |
+| stack_status_reason | Stack CREATE started                 |
++---------------------+--------------------------------------+
+[root@controller heat]# openstack user list
++----------------------------------+-------------------+
+| ID                               | Name              |
++----------------------------------+-------------------+
+| 11cb4d06948046dc86b660b94ece5c08 | chinaskill        |
+| 270b1696605349aab7d3e7e091ba92c6 | swift             |
+| 3d37d0c087df482480c8b6510081187e | placement         |
+| 451764b10f18410db820aa6b82964b0d | cinder            |
+| 60b741e3d6074174a4c0bf7a4760c4eb | neutron           |
+| 68e9e28cea1e4438b707282343368a10 | heat_domain_admin |
+| 74dd9fd47f244ca6be5319b33116187a | heat              |
+| 7f85ba56fc7e4717a93ee7d543d97447 | c1                |
+| 8dc6d5efeaf84b58bdfc6a128ae1a413 | glance            |
+| 9fd039c7fed84df2b805c5b4b81351ee | heat-user         |
+| a4056eb015294f98b2dce60f0c4b24b1 | nova              |
+| ab90102932f34d5f83da5f59ca19df08 | demo              |
+| f6bec50fd4c84560a81bff3ec4267224 | admin             |
++----------------------------------+-------------------+
+</code></pre>
+<h2 id="二、容器云运维"><a href="#二、容器云运维" class="headerlink" title="二、容器云运维"></a>二、容器云运维</h2><h4 id="1、安装"><a href="#1、安装" class="headerlink" title="1、安装"></a>1、安装</h4><table>
+<thead>
+<tr>
+<th>节点角色</th>
+<th>主机名</th>
+<th>VCPUS</th>
+<th>内存</th>
+<th>磁盘</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>master、harbor、CI&#x2F;CD</td>
+<td>master</td>
+<td>4</td>
+<td>8</td>
+<td>100G</td>
+</tr>
+<tr>
+<td>worker node</td>
+<td>node</td>
+<td>4</td>
+<td>8</td>
+<td>100G</td>
+</tr>
+</tbody></table>
+<p>安装 Docker CE 和 Docker Compose[2 分] </p>
+<p>使用提供的 centos7.5-paas 镜像启动两台云主机 master 和 node，flavor 如上表所示。在master、node 各节点中分别安装 DockerCE 和 docker-compose。完成后提交 master 节点的用 </p>
+<p>户名、密码和 IP 到答题框</p>
+<h5 id="1-1-虚拟机准备"><a href="#1-1-虚拟机准备" class="headerlink" title="1.1 虚拟机准备"></a>1.1 虚拟机准备</h5><pre><code class="powershell">准备两台虚拟机，一个master ,一个node节点
+192.168.121.21/22
+1) 关闭SELinux
+所有节点关闭SELinux：
+sed -i &#39;s/SELINUX=enforcing/SELINUX=disabled/g&#39; /etc/selinux/config
+setenforce 0
+2) 所有节点关闭防火墙：
+systemctl stop firewalld.service
+systemctl disable firewalld.service
+</code></pre>
+<h5 id="1-2-初始配置"><a href="#1-2-初始配置" class="headerlink" title="1.2 初始配置"></a>1.2 初始配置</h5><pre><code class="powershell">上传镜像（集群环境则使用包含PASS资源包的云主机镜像）
+1、配置域名解析
+2、配置yum源
+</code></pre>
+<h5 id="1-3-执行脚本"><a href="#1-3-执行脚本" class="headerlink" title="1.3 执行脚本"></a>1.3 执行脚本</h5><pre><code class="powershell">master节点：
+1.  k8s_harbor_install.sh   安装docker-CE harbor load 
+2.  k8s_image_push.sh       本地镜像上传到harbor仓库    
+3.  k8s_master_install.sh     master安装k8s
+
+node节点：
+4.  k8s_node_install.sh       node安装docker-ce harbor 加入k8s集群   
+
+
+[root@master opt]# docker -v
+Docker version 19.03.13, build 4484c46d9d
+[root@master opt]# docker-compose -v
+docker-compose version 1.25.5, build 8a1c60f6
+
+
+补充：
+1、复制docker-compose
+[root@master ~]# scp /usr/local/bin/docker-compose node:/usr/local/bin/docker-compose
+
+2、node节点加入k8s集群
+[root@node ~]# sh token.sh 
+[root@master ~]# kubectl get nodes
+NAME     STATUS   ROLES    AGE   VERSION
+master   Ready    master   10m   v1.18.1
+node     Ready    &lt;none&gt;   40s   v1.18.1
+</code></pre>
+<h4 id="2、docker-compose编排"><a href="#2、docker-compose编排" class="headerlink" title="2、docker-compose编排"></a>2、docker-compose编排</h4><h5 id="2-1-wordpress编排"><a href="#2-1-wordpress编排" class="headerlink" title="2.1 wordpress编排"></a>2.1 wordpress编排</h5><p>wordpress: 建博客工具</p>
+<p>在node节点上从仓库中拉取mysql:latest和wordpress:latest镜像，创建&#x2F;root&#x2F;wproject&#x2F;docker-compse.yaml文件，编排部署wordpress，并设置 restart策略。</p>
+<pre><code class="powershell">node节点拉取镜像
+
+[root@node ~]# mkdir wproject/
+[root@node wproject]# cat docker-compose.yaml 
+version: &#39;2&#39;
+services:
+  mysql:
+    image: 192.168.121.111/library/mysql:5.6
+    expose: 
+      - &quot;3306&quot;
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+
+  wordpress:
+    image: 192.168.121.111/library/wordpress
+    ports:
+      - &quot;80:80&quot;
+
+
+    restart: always
+    environment:
+      - WORDPRESS_DB_HOST=mysql
+      - WORDPRESS_DB_USER=root
+      - WORDPRESS_DB_PASSWORD=123456
+      
+[root@node ~]# docker-compose -f docker-compose.yaml up
+
+浏览器访问192.168.121.22
+
+##停止并删除wordpress容器
+[root@node ~]# docker-compose -f docker-compos.yaml stop
+[root@node ~]# docker rm  `docker ps -qa`
+</code></pre>
+<h5 id="2-2-owncloud编排"><a href="#2-2-owncloud编排" class="headerlink" title="2.2 owncloud编排"></a>2.2 owncloud编排</h5><p>owncloud： 云网盘</p>
+<p>在node1节点上从仓库中拉取mysql:latest和owncloud:latest镜像，创建&#x2F;root&#x2F;wproject&#x2F;docker-compse.yaml文件，编排部署owncloud，并设置 restart策略。 </p>
+<p>在node1节点上停止并删除上述部署的owncloud容器。 </p>
+<pre><code class="powershell">1）拉取镜像
+
+2）创建docker-compose.yaml
+
+[root@node ~]# mkdir ownproject
+[root@node ~]# cd wproject/
+[root@node ownproject]# vim docker-compose.yaml
+owncloud:
+  image: 192.168.121.21/library/owncloud
+  restart: always  
+  links:
+    - mysql:mysql
+  ports:
+    - 80:80
+mysql:
+  image: 192.168.121.21/library/mysql
+  restart: always
+  environment:
+    MYSQL_ROOT_PASSWORD: 123456
+</code></pre>
+<h5 id="2-3-lychee"><a href="#2-3-lychee" class="headerlink" title="2.3 lychee"></a>2.3 lychee</h5><p>云相册</p>
+<p>在node1节点上从仓库中拉取mysql:latest和lychee:latest镜像，创建&#x2F;root&#x2F;wproject&#x2F;docker-compse.yaml文件，编排部署lychee，并设置 restart策略。 </p>
+<p>在node1节点上停止并删除上述部署的lychee容器。</p>
+<pre><code class="powershell">[root@node lychee]# cat docker-compose.yaml 
+mysql:
+  image: 192.168.121.21/library/mysql
+  environment:
+    MYSQL_ROOT_PASSWORD: 123456
+    MYSQL_DATABASE: lychee
+    MYSQL_USER: lychee
+    MYSQL_PASSWORD: 123456
+  ports:
+    - &quot;3306:3306&quot;
+  restart: always
+lychee:
+  image: 192.168.121.21/library/lychee
+  ports:
+    - 80:80
+  links:
+    - &quot;mysql:mysql&quot;
+  environment:
+    WONCLOUD_DB_NAME: lychee
+    WONCLOUD_DB_USER: lychee
+    WONCLOUD_DB_PASSWORD: 123456
+  restart: always
+</code></pre>
+<h4 id="3、web全容器化应用系统部署"><a href="#3、web全容器化应用系统部署" class="headerlink" title="3、web全容器化应用系统部署"></a>3、web全容器化应用系统部署</h4><pre><code class="powershell">1) 使用提供的gmall.tar.gz压缩包，压缩包包含部署的所有文件，包含Dockerfile和docker-compose.yml，docker-compose程序文件
+2) 将6个dockerfile分别构建成镜像。 jar:2021   nginx:2021  mysql:2021  redis:2021  zk:2021  kafka:2021
+3) 编写docker-compose.yaml文件， 使用docker-compose up 编排部署
+4）测试访问
+</code></pre>
+<h4 id="4、CI-x2F-CD-持续集成-x2F-持续交付"><a href="#4、CI-x2F-CD-持续集成-x2F-持续交付" class="headerlink" title="4、CI &#x2F;CD 持续集成&#x2F;持续交付"></a>4、CI &#x2F;CD 持续集成&#x2F;持续交付</h4><p>该公司决定采用GitLab + Jenkins来构建CICD环境，以缩短新功能开发上线周期，及时满足客户的需求，实现DevOps的部分流程，来减轻部署运维的负担，可视化容器生命周期管理、应用发布和版本迭代更新，请完成GitLab + Jenkins的CICD环境部署： </p>
+<p>1.从私有仓库中拉取gitlab:latest镜像，创建&#x2F;root&#x2F;devops&#x2F;docker-compose.yaml文件，启动gitlab服务，实现web浏览器正常访问gitlab服务。 </p>
+<p>gitlab，版本控制工具</p>
+<pre><code class="powershell">[root@node devops]# pwd
+/root/devops
+[root@node devops]# cat docker-compose.yaml 
+version: &#39;2&#39;
+services:
+  gitlab:
+    image: 192.168.121.21/library/gitlab-ce:12.9.2-ce.0
+    container_name: &quot;gitlab&quot;
+    restart: unless-stopped
+    privileged: true
+    hostname: &#39;gitlab&#39;
+    environment:
+      TZ: &#39;Asia/Shanghai&#39;
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url &#39;http://192.168.121.22&#39;
+        gitlab_rails[&#39;time_zone&#39;] = &#39;Asia/Shanghai&#39;
+        gitlab_rails[&#39;gitlab_shell_ssh_port&#39;] = 22
+    ports:
+      - &quot;80:80&quot;
+      - &#39;443:443&#39;
+      - &#39;2222:22&#39;
+
+    volumes:
+      - /opt/gitlab/config:/etc/gitlab
+      - /opt/gitlab/data:/var/opt/gitlab
+      - /opt/gitlab/logs:/var/log/gitlab
+      
+      
+      
+### docker-compose up
+
+###192.168.121.22访问
+</code></pre>
+<p>2.创建gitlab用户（用户名：Chinaskill），创建gitlab项目（项目名：ChinaskillProject），实现通过SSH链接克隆项目。 </p>
+<pre><code class="powershell">1） 改为中文界面
+
+2） 管理中心---&gt;用户---&gt;新用户--- 设定密码
+
+3） 登录新用户，-改中文界面--创建项目
+
+4） 添加密钥 
+[root@node .ssh]# cat /root/.ssh/id_rsa.pub
+
+
+5）登录方式
+
+
+[root@node ~]# vim /root/.ssh/config
+HOST 192.168.121.22
+Port 2222
+IdentityFile ~/.ssh/id_rsa
+User git
+
+[root@node ~]# mkdir Chinaskill
+[root@node ~]# cd Chinaskill/
+
+
+克隆项目
+5.1） [root@node Chinaskill]# git clone git@192.168.121.22:gitlab/chinaskillproject.git
+
+
+##克隆地址 可以在项目中找到
+
+5.2）
+
+[root@node Chinaskill]# git clone ssh://192.168.121.22/gitlab/chinaskillproject.git
+</code></pre>
+<p>3.从私有镜像仓库中拉取Jenkins镜像，在cicd-node节点上运行部署Jenkins容器，将容器的8080端口映射为宿主机的8080端口。 </p>
+<pre><code class="powershell">[root@node ~]# docker run -itd -p 8080:8080 -p 50000:50000 -v jenkis-data:/var/jenkins_home \
+&gt; -v /var/run/docker.sock:/var/run/docker.sock 192.168.121.21/library/jenkins
+262a6eb4a043628c42ba3ffcfb0c0edbd96ebc46f3c92cc556132d732a232c43
+
+[root@node ~]# cd /var/lib/docker/volumes/jenkis-data/_data
+
+[root@node _data]# cat secrets/initialAdminPassword
+</code></pre>
+<p>5.在node节点&#x2F;root目录下克隆ChinaskillProject项目，修改项目中的index.html文件（&#x2F;root&#x2F;ChinaskillProject&#x2F;templates&#x2F;index.html）中的“Hello,word!”修改为“Hello,ChinaSkill!”，提交并推送（push）代码。 </p>
+<pre><code class="powershell">1) 进入到项目的目录
+
+[root@node ~]# cd -
+/root/Chinaskill/chinaskillproject
+[root@node chinaskillproject]# ls
+README.md
+[root@node chinaskillproject]# pwd
+/root/Chinaskill/chinaskillproject
+
+[root@node chinaskillproject]#  vi index.html
+hello，chinaskill
+
+[root@node chinaskillproject]#  git add index.html
+[root@node chinaskillproject]#  git commit -a -m &quot;first upload index.html&quot;
+[root@node chinaskillproject]#  git config --global user.name gitlab
+[root@node chinaskillproject]#  git config --global user.email gitlab@qq.com
+[root@node chinaskillproject]#  git commit -a -m &quot;first upload index.html&quot;
+[root@node chinaskillproject]#  git push
+
+查看项目中是否存在文件。
+</code></pre>
+<h4 id="5、k8s运维"><a href="#5、k8s运维" class="headerlink" title="5、k8s运维"></a>5、k8s运维</h4><h5 id="【题目1】Pod管理"><a href="#【题目1】Pod管理" class="headerlink" title="【题目1】Pod管理"></a>【题目1】Pod管理</h5><pre><code class="powershell">
+
+在master节点/root目录下编写yaml文件nginx.yaml，具体要求如下：
+（1）Pod名称：nginx-pod；
+（2）命名空间：default；
+（3）容器名称：mynginx；
+（4）镜像：nginx；拉取策略：IfNotPresent；
+（5）容器端口：80。
+完成后使用该yaml文件创建Pod，并提交master节点的用户名、密码和IP到答题框。
+
+
+
+[root@master ~]# vim nginx.yaml 
+apiVersion: v1
+kind: Pod
+metadata:
+  creationTimestamp: null
+  labels:
+    run: mynginx
+  name: nginx-pod
+  namespace: default
+spec:
+  containers:
+  - image: 192.168.121.21/library/nginx:latest
+    name: mynginx
+    ports:
+    - containerPort: 80
+    imagePullPolicy: IfNotPresent
+    
+[root@master ~]#  kubectl create -f nginx.yaml
+</code></pre>
+<h5 id="【题目2】Deployment管理"><a href="#【题目2】Deployment管理" class="headerlink" title="【题目2】Deployment管理"></a>【题目2】Deployment管理</h5><p>在master节点&#x2F;root目录下编写yaml文件nginx-deployment.yaml，具体要求如下：<br>（1）Deployment名称：nginx-deployment；<br>（2）命名空间：default；<br>（3）Pod名称：nginx-deployment，副本数：2；<br>（4）网络：hostNetwork；<br>（5）镜像：nginx；<br>（6）容器端口：80<br>完成后使用该yaml文件创建Deployment，并提交master节点的用户名、密码和IP到答题框。</p>
+<pre><code class="powershell">apiVersion: apps/v1      ##版本号/pod资源
+kind: Deployment         ##类型/控制器
+metadata:                ##数据标签
+  name: nginx-deployment
+  namespace: default    
+  labels:         ##子标签
+    app: nginx-deployment   ##业务容器
+spec:                ###容器的详细定义
+  replicas: 2            ##副本集
+  selector:             ##选择器
+    matchLabels:       ##匹配标签
+      app: nginx-deployment     ##对应业务标签
+  template:            ##模板
+    metadata:
+      labels:
+        app: nginx-deployment
+    spec:
+      hostNetwork: true
+      containers:              
+      - name: nginx-deployment   ##对应业务容器
+        image: 192.168.121.21/library/nginx:latest  #镜像
+        ports:
+        - containerPort: 80  ##容器端口
+</code></pre>
+<h5 id="【题目3】ReplicaSet管理"><a href="#【题目3】ReplicaSet管理" class="headerlink" title="【题目3】ReplicaSet管理"></a>【题目3】ReplicaSet管理</h5><p>在master节点&#x2F;root目录下编写yaml文件replicaset.yaml，具体要求如下：<br>（1）Replicaset名称：nginx；<br>（2）命名空间：default；<br>（3）副本数：3；<br>（4）镜像：nginx。<br>完成后使用该yaml文件创建ReplicaSet，并提交master节点的用户名、密码和IP到答题框。</p>
+<pre><code class="powershell">apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: nginx
+  namespace: default
+spec:
+  replicas: 3
+  selector: 
+    app: nginx
+  template:
+    metadata:
+      labels: 
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: 192.168.121.21/library/nginx:latest 
+</code></pre>
+<h5 id="【题目4】健康检查"><a href="#【题目4】健康检查" class="headerlink" title="【题目4】健康检查"></a>【题目4】健康检查</h5><p>在master节点&#x2F;root目录下编写yaml文件liveness_httpget.yaml，具体要求如下：<br>（1）Pod名称：liveness-http；<br>（2）命名空间：default；<br>（3）镜像：nginx；端口：80；<br>（4）容器启动时运行命令“echo Healty &gt; &#x2F;usr&#x2F;share&#x2F;nginx&#x2F;html&#x2F;healthz”；<br>（5）httpGet请求的资源路径为&#x2F;healthz，地址默认为Pod IP，端口使用容器中定义的端口名称HTTP；<br>（6）启动后延时30秒开始运行检测；<br>（7）每隔3秒执行一次liveness probe。<br>完成后使用该yaml文件创建Pod，并提交master节点的用户名、密码和IP到答题框。</p>
+<pre><code class="powershell">apiVersion: v1
+kind: Pod
+metadata:
+  name: liveness-http
+  namespace: default
+spec:
+  containers:
+    - name: nginx
+      image: 192.168.100.10/library/nginx:latest
+      ports:
+        - containerPort: 80
+      args:
+        - /bin/sh
+        - -c
+        - echo Healty &gt; /usr/share/nginx/html/healthz
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: http
+        initialDelaySeconds: 30
+        periodSeconds: 3
+</code></pre>
+<h2 id="三、公有云"><a href="#三、公有云" class="headerlink" title="三、公有云"></a>三、公有云</h2><h4 id="任务1-基础设施构建"><a href="#任务1-基础设施构建" class="headerlink" title="任务1  基础设施构建"></a>任务1  基础设施构建</h4><p>1.按照1核CPU、4G内存、40G硬盘创建两台名为ChinaSkill-node-1和ChinaSkill-node-2的云主机。</p>
+<p>2.在公有云中完成一个名为intnetX的内部网络为192.168.X.0的云主机网络区域配置，将该网络网关设为192.168.X.254，使得ChinaSkill-node-1和ChinaSkill-node-2接入内部网络，并使云主机可以正常接入公共外部网络。</p>
+<p>3.创建一个40G的文件块存储disk-1，并将云硬盘格式化为EXT4格式，挂载到ChinaSkill-node-2的&#x2F;nfs&#x2F;code目录下。</p>
+</div><div class="article_tags"><span> <i class="yufont icon-tag"></i> 标签: </span><a href="/tags/openstack/">openstack</a></div></article><div class="article-copyright"><p>标题: <a href="/2023/01/02/openstack_Om/">openstack运维题</a></p><p> 链接: <a href="/2023/01/02/openstack_Om/">https://zhiyong0389.github.io/2023/01/02/openstack_Om/</a></p><p> 版权声明: 若无特殊标注皆为 智勇 原创版权, 转载请以链接形式注明作者及原始出处</p><p>最后编辑时间: 2023-03-11</p></div><div class="page_turning"><a class="page_up" href="/2023/01/02/hello-world/"
+  style="background-image:url(/assets/images/random/10.jpg)">
+  <div class="inner"><span>上一篇:</span>
+    <p>Hello World</p>
+  </div>
+</a>
+<a class="page_down" href="/2023/01/02/test-article/"
+style="background-image:url(https://i.328888.xyz/2022/12/28/UxA9Q.png)">
+<div class="inner"><span>下一篇:</span>
+  <p>测试</p>
+</div>
+</a>
+</div></div></div><div class="article_sidebar left"><div class="author_sidebar sidebar_container"><div class="author_info"><div class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/></div><div class="author_name"><h3><a href="/about">智勇</a></h3><p>不断学习，不断提升！</p></div></div><div class="author_data"><ul><li> <div> <span>23</span><p>文章</p></div></li><li> <div> <span>0</span><p>分类</p></div></li><li> <div> <span>8</span><p>标签</p></div></li></ul></div></div><div class="catalogue sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-feiji"></i>目录</h3><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E7%A7%81%E6%9C%89%E4%BA%91%E8%BF%90%E7%BB%B4"><span class="toc-number">1.</span> <span class="toc-text">一、私有云运维</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1%E3%80%81cinder%E5%88%9B%E5%BB%BA%E7%A1%AC%E7%9B%98"><span class="toc-number">1.0.1.</span> <span class="toc-text">1、cinder创建硬盘</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2%E3%80%81heat%E5%AE%89%E8%A3%85"><span class="toc-number">1.0.2.</span> <span class="toc-text">2、heat安装</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3%E3%80%81%E9%95%9C%E5%83%8F%E7%AE%A1%E7%90%86"><span class="toc-number">1.0.3.</span> <span class="toc-text">3、镜像管理</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4%E3%80%81%E7%BD%91%E7%BB%9C%E7%AE%A1%E7%90%86"><span class="toc-number">1.0.4.</span> <span class="toc-text">4、网络管理</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#5%E3%80%81%E4%BA%91%E4%B8%BB%E6%9C%BA%E7%AE%A1%E7%90%86"><span class="toc-number">1.0.5.</span> <span class="toc-text">5、云主机管理</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#6%E3%80%81%E5%BF%AB%E7%85%A7%E7%AE%A1%E7%90%86"><span class="toc-number">1.0.6.</span> <span class="toc-text">6、快照管理</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#7%E3%80%81%E6%95%B0%E6%8D%AE%E5%BA%93%E5%AE%89%E8%A3%85"><span class="toc-number">1.0.7.</span> <span class="toc-text">7、数据库安装</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#8%E3%80%81keystone%E5%AE%89%E8%A3%85"><span class="toc-number">1.0.8.</span> <span class="toc-text">8、keystone安装</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#9%E3%80%81heat%E6%A8%A1%E6%9D%BF%E7%AE%A1%E7%90%86"><span class="toc-number">1.0.9.</span> <span class="toc-text">9、heat模板管理</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#10%E3%80%81openstack%E5%8A%A8%E6%80%81%E8%B0%83%E6%95%B4%E4%BA%91%E4%B8%BB%E6%9C%BA%E7%B1%BB%E5%9E%8B"><span class="toc-number">1.0.10.</span> <span class="toc-text">10、openstack动态调整云主机类型</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#10%E3%80%81swift%E4%BD%9C%E4%B8%BAglance%E9%95%9C%E5%83%8F%E6%9C%8D%E5%8A%A1%E7%9A%84%E5%90%8E%E7%AB%AF%E5%AD%98%E5%82%A8"><span class="toc-number">1.0.11.</span> <span class="toc-text">10、swift作为glance镜像服务的后端存储</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#11%E3%80%81%E4%BA%91%E5%B9%B3%E5%8F%B0%E5%AE%89%E5%85%A8%E7%AD%96%E7%95%A5%E6%8F%90%E5%8D%87%EF%BC%8Copenstack%E4%B8%ADhttp%E8%BD%AChttps"><span class="toc-number">1.0.12.</span> <span class="toc-text">11、云平台安全策略提升，openstack中http转https</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#12%E3%80%81python-%E7%A8%8B%E5%BA%8F%E5%AF%B9%E6%8E%A5openstack-api"><span class="toc-number">1.0.13.</span> <span class="toc-text">12、python 程序对接openstack api</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#13%E3%80%81%E5%88%9B%E5%BB%BA%E4%BA%91%E4%B8%BB%E6%9C%BA%E5%91%BD%E4%BB%A4"><span class="toc-number">1.0.14.</span> <span class="toc-text">13、创建云主机命令</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#14%E3%80%81heat%E6%A8%A1%E6%9D%BF%E7%AE%A1%E7%90%862"><span class="toc-number">1.0.15.</span> <span class="toc-text">14、heat模板管理2</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#14-1-%E5%88%9B%E5%BB%BA%E7%BD%91%E7%BB%9C%E6%A8%A1%E6%9D%BF"><span class="toc-number">1.0.15.1.</span> <span class="toc-text">14.1  创建网络模板</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#14-2-%E5%88%9B%E5%BB%BA%E7%94%A8%E6%88%B7%E6%A8%A1%E6%9D%BF"><span class="toc-number">1.0.15.2.</span> <span class="toc-text">14.2 创建用户模板</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%AE%B9%E5%99%A8%E4%BA%91%E8%BF%90%E7%BB%B4"><span class="toc-number">2.</span> <span class="toc-text">二、容器云运维</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1%E3%80%81%E5%AE%89%E8%A3%85"><span class="toc-number">2.0.1.</span> <span class="toc-text">1、安装</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#1-1-%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%87%86%E5%A4%87"><span class="toc-number">2.0.1.1.</span> <span class="toc-text">1.1 虚拟机准备</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#1-2-%E5%88%9D%E5%A7%8B%E9%85%8D%E7%BD%AE"><span class="toc-number">2.0.1.2.</span> <span class="toc-text">1.2 初始配置</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#1-3-%E6%89%A7%E8%A1%8C%E8%84%9A%E6%9C%AC"><span class="toc-number">2.0.1.3.</span> <span class="toc-text">1.3 执行脚本</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2%E3%80%81docker-compose%E7%BC%96%E6%8E%92"><span class="toc-number">2.0.2.</span> <span class="toc-text">2、docker-compose编排</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#2-1-wordpress%E7%BC%96%E6%8E%92"><span class="toc-number">2.0.2.1.</span> <span class="toc-text">2.1 wordpress编排</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#2-2-owncloud%E7%BC%96%E6%8E%92"><span class="toc-number">2.0.2.2.</span> <span class="toc-text">2.2 owncloud编排</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#2-3-lychee"><span class="toc-number">2.0.2.3.</span> <span class="toc-text">2.3 lychee</span></a></li></ol></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3%E3%80%81web%E5%85%A8%E5%AE%B9%E5%99%A8%E5%8C%96%E5%BA%94%E7%94%A8%E7%B3%BB%E7%BB%9F%E9%83%A8%E7%BD%B2"><span class="toc-number">2.0.3.</span> <span class="toc-text">3、web全容器化应用系统部署</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4%E3%80%81CI-x2F-CD-%E6%8C%81%E7%BB%AD%E9%9B%86%E6%88%90-x2F-%E6%8C%81%E7%BB%AD%E4%BA%A4%E4%BB%98"><span class="toc-number">2.0.4.</span> <span class="toc-text">4、CI &#x2F;CD 持续集成&#x2F;持续交付</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#5%E3%80%81k8s%E8%BF%90%E7%BB%B4"><span class="toc-number">2.0.5.</span> <span class="toc-text">5、k8s运维</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#%E3%80%90%E9%A2%98%E7%9B%AE1%E3%80%91Pod%E7%AE%A1%E7%90%86"><span class="toc-number">2.0.5.1.</span> <span class="toc-text">【题目1】Pod管理</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E3%80%90%E9%A2%98%E7%9B%AE2%E3%80%91Deployment%E7%AE%A1%E7%90%86"><span class="toc-number">2.0.5.2.</span> <span class="toc-text">【题目2】Deployment管理</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E3%80%90%E9%A2%98%E7%9B%AE3%E3%80%91ReplicaSet%E7%AE%A1%E7%90%86"><span class="toc-number">2.0.5.3.</span> <span class="toc-text">【题目3】ReplicaSet管理</span></a></li><li class="toc-item toc-level-5"><a class="toc-link" href="#%E3%80%90%E9%A2%98%E7%9B%AE4%E3%80%91%E5%81%A5%E5%BA%B7%E6%A3%80%E6%9F%A5"><span class="toc-number">2.0.5.4.</span> <span class="toc-text">【题目4】健康检查</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E5%85%AC%E6%9C%89%E4%BA%91"><span class="toc-number">3.</span> <span class="toc-text">三、公有云</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BB%BB%E5%8A%A11-%E5%9F%BA%E7%A1%80%E8%AE%BE%E6%96%BD%E6%9E%84%E5%BB%BA"><span class="toc-number">3.0.1.</span> <span class="toc-text">任务1  基础设施构建</span></a></li></ol></li></ol></li></ol></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-24gl-folderOpen"></i>分类</h3><div class="archive_lists"><ul class="category-list"></ul></div></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-tag"></i>标签</h3><a href="/tags/Kubernetes/" style="font-size: 18.67px;">Kubernetes</a> <a href="/tags/ServiceMesh/" style="font-size: 16px;">ServiceMesh</a> <a href="/tags/helm-k8s/" style="font-size: 17.33px;">helm,k8s</a> <a href="/tags/hexo-github%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" style="font-size: 20px;">hexo+github搭建博客</a> <a href="/tags/kubernetes/" style="font-size: 16px;">kubernetes</a> <a href="/tags/linux/" style="font-size: 17.33px;">linux</a> <a href="/tags/mysql/" style="font-size: 16px;">mysql</a> <a href="/tags/openstack/" style="font-size: 17.33px;">openstack</a></div></div></div><footer class="footer"> <div class="footer_bottom"><div class="footer_box"><div class="copy"><span>主题</span><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn">Hexo</a><span>模板</span><a href="/">智勇</a></div><div class="copy"><span>© 2023<a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/#/Integrated/index">豫ICP备2023014079号-1</a></span></div></div></div></footer><html><head></head><body><span id="span"></span><script type="text/javascript">function runtime(){
+        // 初始时间，日/月/年 时:分:秒
+        X = new Date("01/01/2023 8:32:00");
+        Y = new Date();
+        T = (Y.getTime()-X.getTime());
+        M = 24*60*60*1000;
+        a = T/M;
+        A = Math.floor(a);
+        b = (a-A)*24;
+        B = Math.floor(b);
+        c = (b-B)*60;
+        C = Math.floor((b-B)*60);
+        D = Math.floor((c-C)*60);
+        //信息写入到DIV中
+        span.innerHTML = "本站勉强运行: "+A+"天"+B+"小时"+C+"分"+D+"秒"
+    }
+    setInterval(runtime, 1000);
+</script></body></html><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"> </script><script src="/assets/lib/prettify/prettify.js"> </script><script src="/assets/lib/fancybox/fancybox.js"> </script><script src="/assets/js/app.js"> </script></div></body></html>

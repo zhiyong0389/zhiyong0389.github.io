@@ -1,0 +1,84 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="shortcut icon" href="/assets/imgs/favicon.ico" type="image/x-icon"><title>本地搭建的GitLab中开启Pages功能 | 智勇</title><meta name="keywords" content="云计算 云原生 私有云 容器云"><meta name="keywords" content="记录个人学习生活"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_3435803_wadmwlqwhps.css"><link rel="stylesheet" href="/style/index.css"><link rel="stylesheet" href="/assets/lib/prettify/prettify.css"><link rel="stylesheet" href="/assets/lib/fancybox/fancybox.css"><meta name="generator" content="Hexo 6.3.0"></head><body><div id="app"><header class="header yu13_p_30" id="header"><div class="header_left"><h1 class="yu13_logo"><a id="logo" href="/">智勇</a></h1></div><div class="header_right"><div class="header_search yu13_cursor yu13_hover" id="search"><i class="yufont icon-sousuo"></i></div><div class="line yu13_p_10"></div><nav class="header_nav"><ul class="nav"><li class="menu_nav"><a href="/"><i class="fas"></i><span> 首页</span></a></li><li class="menu_nav"><a href="/archives"><i class="fas"></i><span> 归档</span></a></li><li class="menu_nav"><a href="/categorys"><i class="fas"></i><span> 分类</span></a></li><li class="menu_nav"><a href="/tags"><i class="fas"></i><span> 标签</span></a></li><li class="menu_nav"><a href="/links"><i class="fas"></i><span> 友情链接</span></a></li></ul></nav></div></header><div class="article_topbg" style="background-image: url('/assets/imgs/top_bg.jpg')"><div class="topbg_container"><h1 class="title">本地搭建的GitLab中开启Pages功能</h1><div class="info"><div class="article_meta"><div class="left"><span class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/><a href="/about">智勇</a></span><span><i class="yufont icon-yingyong"></i><span>暂无分类</span></span><span><i class="yufont icon-rili"></i>2023-1-12</span></div></div></div></div></div><div class="container log_container clearfix"><div class="article_content left"> <div class="article_main"><article class="content"><div class="content_text article_text"> <p>最近在公司内部，我负责搭建了GitLab服务，开启了从SVN逐步转到GIT的路程。目前自建的GitLab运行状态良好，非常好用。但是默认的GitLab并没有开启Pages服务，这样的话在编写项目说明文档时，就很不方便了。于是自己试着在本地搭建的GitLab中开启Pages功能，下面把开启过程和遇到的问题记录下来，分享给大家。</p>
+<h3 id="1、开启GitLab-Pages功能"><a href="#1、开启GitLab-Pages功能" class="headerlink" title="1、开启GitLab Pages功能"></a><strong>1、开启GitLab Pages功能</strong></h3><p>编辑 &#x2F;etc&#x2F;gitlab&#x2F;gitlab.rb文件，修改如下两行</p>
+<pre><code>##! Define to enable GitLab Pages
+pages_external_url &quot;http://R7102/&quot;
+gitlab_pages[&#39;enable&#39;] = true
+</code></pre>
+<p>注意的这里的pages_external_url，配置的是Pages使用的域名。如果你没有域名，就先随便写个主机名什么的。之后我们可能通过配置Nginx来解决。</p>
+<p>※注意，最好通过 <strong>gitlab-ctl restart</strong> 重启GitLab，使得GitLab Pages功能生效。</p>
+<h3 id="2、安装配置GitLab-Runner"><a href="#2、安装配置GitLab-Runner" class="headerlink" title="2、安装配置GitLab Runner"></a>2、安装配置GitLab Runner</h3><p>为了能够自动发布Pages，我们需要安装GitLab Runner，然后通过GitLab CI做到Pages内容的自动更新。</p>
+<p>由于网络环境不稳定，所以建议不要使用yum方式安装Runner，可以点击下面的链接下载GitLab Runner的安装包。</p>
+<p><a target="_blank" rel="noopener" href="https://packages.gitlab.com/runner/gitlab-runner">https://packages.gitlab.com/runner/gitlab-runner</a></p>
+<p>安装好之后，就可以通过命令为我们的项目添加runner了，在命令行中输入以下命令，按照提示一步一步完成即可。</p>
+<pre><code>gitlab-runner register
+</code></pre>
+<p>其中需要填写URL和Token，可以在GitLab项目的概览-&gt;Runners找到，类似下图：</p>
+<p><img src="https://oscimg.oschina.net/oscnet/52f8c7f53da1ab5708b0c1262b15126a5c2.jpg" alt="52f8c7f53da1ab5708b0c1262b15126a5c2.jpg"></p>
+<h3 id="3、配置Pages服务的CI"><a href="#3、配置Pages服务的CI" class="headerlink" title="3、配置Pages服务的CI"></a>3、配置Pages服务的CI</h3><p>在工程根目录下，创建<a target="_blank" rel="noopener" href="http://10.21.20.76:6868/xiyt/ES-DOC/blob/master/.gitlab-ci.yml">.gitlab-ci.yml</a>文件，文件内容可以通过GitLab内置的模板生产，如下图：</p>
+<p><img src="https://oscimg.oschina.net/oscnet/gitpages-02.png"></p>
+<p>这里选择HTML为例，就生产了以上代码。其中<strong>cp -r docs&#x2F;. .public</strong>这句根据需要修改，将docs改为你存放pages页面的路径即可。</p>
+<p>这样，当我们每次执行push动作后，就会触发pages的自动部署。将我们的pages页面发布到GitLab Pages服务中。</p>
+<h3 id="4、如何访问Pages页面呢？"><a href="#4、如何访问Pages页面呢？" class="headerlink" title="4、如何访问Pages页面呢？"></a>4、如何访问Pages页面呢？</h3><p>如果你有在上面配置开启Pages时配置了域名了，那么直接访问：<strong>http:&#x2F;&#x2F;你的Git账号.域名&#x2F;工程名</strong>，例如：</p>
+<p><em><a target="_blank" rel="noopener" href="http://xiaowang.mypages.com/project01">http://xiaowang.mypages.com/project01</a></em></p>
+<p>但是如果你不想那么麻烦还得配置域名的话，这里也有解决方法，由于GitLab Pages服务是部署到Nginx中，我们可以同配置Nginx来通过IP地址访问。</p>
+<p>首先要找啊找，找到Pages的发布位置，和GitLab内置Nginx的位置，分别如下：</p>
+<p>1、Pages部署目录：&#x2F;var&#x2F;opt&#x2F;gitlab&#x2F;gitlab-rails&#x2F;shared&#x2F;pages</p>
+<p>2、内置Nginx目录：&#x2F;var&#x2F;opt&#x2F;gitlab&#x2F;nginx</p>
+<p>然后编辑nginx目录下的conf&#x2F;gitlab-pages.conf文件，内容如下：</p>
+<pre><code>server &#123;
+  listen 6869; ## 端口根据需要填写
+  server_name 10.21.100.200; ## IP根据实际情况填写
+  server_tokens off; ## Don&#39;t show the nginx version number, a security best practice
+ 
+  ## Disable symlink traversal
+  disable_symlinks on;
+ 
+  access_log  /var/log/gitlab/nginx/gitlab_pages_access.log gitlab_access;
+  error_log   /var/log/gitlab/nginx/gitlab_pages_error.log;
+ 
+  # Pass everything to pages daemon
+  location / &#123;
+    # 指向pages的发布目录
+    root /var/opt/gitlab/gitlab-rails/shared/pages;
+    index index.html;
+  &#125;
+ 
+  # Define custom error pages
+  error_page 403 /403.html;
+  error_page 404 /404.html;
+&#125;
+</code></pre>
+<p>配置好后重启Nginx：gitlab-ctl restart nginx</p>
+<p>访问页面：<a href="http://IP:端口/gitlab账号/工程名/public/，例如：_http://10.21.100.200:6869/xiaowang/project01/public/#/">http://IP:端口/gitlab账号/工程名/public/，例如：_http://10.21.100.200:6869/xiaowang/project01/public/#/</a>_</p>
+<p>转载于:<a target="_blank" rel="noopener" href="https://my.oschina.net/doctorlzr1988/blog/3044964">https://my.oschina.net/doctorlzr1988/blog/3044964</a></p>
+<p>本文转自 <a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_34304013/article/details/92671899">https://blog.csdn.net/weixin_34304013&#x2F;article&#x2F;details&#x2F;92671899</a>，如有侵权，请联系删除。</p>
+</div><div class="article_tags"><span> <i class="yufont icon-tag"></i> 标签: </span></div></article><div class="article-copyright"><p>标题: <a href="/2023/01/12/gitlab-pages/">本地搭建的GitLab中开启Pages功能</a></p><p> 链接: <a href="/2023/01/12/gitlab-pages/">https://zhiyong0389.github.io/2023/01/12/gitlab-pages/</a></p><p> 版权声明: 若无特殊标注皆为 智勇 原创版权, 转载请以链接形式注明作者及原始出处</p><p>最后编辑时间: 2023-03-11</p></div><div class="page_turning"><a class="page_up" href="/2023/01/09/k8s-gitlab-runner/"
+  style="background-image:url(/assets/images/random/4.jpg)">
+  <div class="inner"><span>上一篇:</span>
+    <p>K8s 部署 Gitlab CI Runner</p>
+  </div>
+</a>
+<a class="page_down" href="/2023/01/15/k8s-QoS/"
+style="background-image:url(https://img-blog.csdnimg.cn/20210413195035367.png?x-oss-process=image/watermark,type_ZmFuZ3poZW5naGVpdGk,shadow_10,text_aHR0cHM6Ly9ibG9nLmNzZG4ubmV0L3FxXzM0NTU2NDE0,size_16,color_FFFFFF,t_70)">
+<div class="inner"><span>下一篇:</span>
+  <p>Kubernetes Pod 的服务质量（QoS）</p>
+</div>
+</a>
+</div></div></div><div class="article_sidebar left"><div class="author_sidebar sidebar_container"><div class="author_info"><div class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/></div><div class="author_name"><h3><a href="/about">智勇</a></h3><p>不断学习，不断提升！</p></div></div><div class="author_data"><ul><li> <div> <span>23</span><p>文章</p></div></li><li> <div> <span>0</span><p>分类</p></div></li><li> <div> <span>8</span><p>标签</p></div></li></ul></div></div><div class="catalogue sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-feiji"></i>目录</h3><ol class="toc"><li class="toc-item toc-level-3"><a class="toc-link" href="#1%E3%80%81%E5%BC%80%E5%90%AFGitLab-Pages%E5%8A%9F%E8%83%BD"><span class="toc-number">1.</span> <span class="toc-text">1、开启GitLab Pages功能</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2%E3%80%81%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AEGitLab-Runner"><span class="toc-number">2.</span> <span class="toc-text">2、安装配置GitLab Runner</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3%E3%80%81%E9%85%8D%E7%BD%AEPages%E6%9C%8D%E5%8A%A1%E7%9A%84CI"><span class="toc-number">3.</span> <span class="toc-text">3、配置Pages服务的CI</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4%E3%80%81%E5%A6%82%E4%BD%95%E8%AE%BF%E9%97%AEPages%E9%A1%B5%E9%9D%A2%E5%91%A2%EF%BC%9F"><span class="toc-number">4.</span> <span class="toc-text">4、如何访问Pages页面呢？</span></a></li></ol></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-24gl-folderOpen"></i>分类</h3><div class="archive_lists"><ul class="category-list"></ul></div></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-tag"></i>标签</h3><a href="/tags/Kubernetes/" style="font-size: 18.67px;">Kubernetes</a> <a href="/tags/ServiceMesh/" style="font-size: 16px;">ServiceMesh</a> <a href="/tags/helm-k8s/" style="font-size: 17.33px;">helm,k8s</a> <a href="/tags/hexo-github%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" style="font-size: 20px;">hexo+github搭建博客</a> <a href="/tags/kubernetes/" style="font-size: 16px;">kubernetes</a> <a href="/tags/linux/" style="font-size: 17.33px;">linux</a> <a href="/tags/mysql/" style="font-size: 16px;">mysql</a> <a href="/tags/openstack/" style="font-size: 17.33px;">openstack</a></div></div></div><footer class="footer"> <div class="footer_bottom"><div class="footer_box"><div class="copy"><span>主题</span><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn">Hexo</a><span>模板</span><a href="/">智勇</a></div><div class="copy"><span>© 2023<a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/#/Integrated/index">豫ICP备2023014079号-1</a></span></div></div></div></footer><html><head></head><body><span id="span"></span><script type="text/javascript">function runtime(){
+        // 初始时间，日/月/年 时:分:秒
+        X = new Date("01/01/2023 8:32:00");
+        Y = new Date();
+        T = (Y.getTime()-X.getTime());
+        M = 24*60*60*1000;
+        a = T/M;
+        A = Math.floor(a);
+        b = (a-A)*24;
+        B = Math.floor(b);
+        c = (b-B)*60;
+        C = Math.floor((b-B)*60);
+        D = Math.floor((c-C)*60);
+        //信息写入到DIV中
+        span.innerHTML = "本站勉强运行: "+A+"天"+B+"小时"+C+"分"+D+"秒"
+    }
+    setInterval(runtime, 1000);
+</script></body></html><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"> </script><script src="/assets/lib/prettify/prettify.js"> </script><script src="/assets/lib/fancybox/fancybox.js"> </script><script src="/assets/js/app.js"> </script></div></body></html>

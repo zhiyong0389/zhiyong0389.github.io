@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="utf-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+  <!-- Created By http://www.zhetao.com/sitemapcreator,  URLs: 26 Generated at: 2023-01-31 20:18:44 -->
+
+  <url>
+    <loc>http://zhiyong.rr.nu/</loc>
+    <priority>1.00</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/archives</loc>
+    <priority>1.00</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/categorys</loc>
+    <priority>1.00</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/tags</loc>
+    <priority>1.00</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/links</loc>
+    <priority>1.00</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/2023/01/15/mirrors-china/</loc>
+    <priority>1.00</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/2023/01/15/yum-script/</loc>
+    <priority>1.00</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/2023/01/15/k8s-HostAliases/</loc>
+    <priority>1.00</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/2023/01/15/k8s-QoS/</loc>
+    <priority>1.00</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/tags/hexo-github%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/</loc>
+    <priority>0.93</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/tags/Kubernetes/</loc>
+    <priority>0.91</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/2023/01/09/k8s-gitlab-runner/</loc>
+    <priority>0.84</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/2023/01/09/hexo-blog-4/</loc>
+    <priority>0.84</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/2023/01/09/hexo-blog-2/</loc>
+    <priority>0.84</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/2023/01/09/hexo-blog-1/</loc>
+    <priority>0.84</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/2023/01/09/hexo-blog-3/</loc>
+    <priority>0.84</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/2023/01/12/gitlab-pages/</loc>
+    <priority>0.82</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/archives/page/2/</loc>
+    <priority>0.82</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/archives/</loc>
+    <priority>0.82</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/tags/linux/</loc>
+    <priority>0.82</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/tags/openstack/</loc>
+    <priority>0.82</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/page/2/</loc>
+    <priority>0.81</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/2023/01/04/BRICS/</loc>
+    <priority>0.72</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/2023/01/02/openstack_Om/</loc>
+    <priority>0.72</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/2023/01/02/test-article/</loc>
+    <priority>0.68</priority>
+  </url>
+
+  <url>
+    <loc>http://zhiyong.rr.nu/2023/01/02/hello-world/</loc>
+    <priority>0.68</priority>
+  </url>
+
+</urlset>

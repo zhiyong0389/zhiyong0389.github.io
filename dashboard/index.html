@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<!-- saved from url=(0060)http://192.168.27.121/dashboard/auth/login/?next=/dashboard/ -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><style type="text/css">@charset "UTF-8";[ng\:cloak],[ng-cloak],[data-ng-cloak],[x-ng-cloak],.ng-cloak,.x-ng-cloak,.ng-hide:not(.ng-hide-animate){display:none !important;}ng\:form{display:block;}.ng-animate-shim{visibility:hidden;}.ng-anchor{position:absolute;}</style>
+    
+    
+    <meta content="IE=edge" http-equiv="X-UA-Compatible">
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    
+      
+
+    
+    <title>登录 - OpenStack Dashboard</title>
+    
+    
+      
+
+
+<link rel="stylesheet" href="./登录 - OpenStack Dashboard_files/34f8a8f8d5e5.css" type="text/css" media="screen">
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="./登录 - OpenStack Dashboard_files/e0a4bfb5334e.css" type="text/css">
+
+
+<link rel="shortcut icon" href="https://i.328888.xyz/2023/01/28/jChZq.th.jpeg">
+<link rel="apple-touch-icon" sizes="180x180" href="http://192.168.27.121/dashboard/static/dashboard/img/apple-touch-icon.png">
+<link rel="mask-icon" href="http://192.168.27.121/dashboard/static/dashboard/img/safari-pinned-tab.svg" color="#5bbad5">
+
+    
+    
+  
+
+  <script type="text/javascript" charset="utf-8">
+    if (self === top) {
+      var antiClickjack = document.getElementById("anti-clickjack");
+      antiClickjack.parentNode.removeChild(antiClickjack);
+    } else {
+      top.location = self.location;
+    }
+  </script>
+
+
+    
+
+
+
+
+
+<script type="text/javascript" src="./登录 - OpenStack Dashboard_files/f59508a95f83.js.下载"></script>
+
+<script type="text/javascript" charset="utf-8">
+  (function (global) {
+    'use strict';
+
+    // make translation info available on client
+    horizon.languageCode = 'zh-cn';
+    horizon.languageBidi = 'False';
+    horizon.datepickerLocale = 'zh-CN';
+
+    /* Load angular modules extensions list before we include angular/horizon.js */
+    global.horizonPlugInModules = ['horizon.dashboard.project', 'horizon.dashboard.project.heat_dashboard.template_generator', 'horizon.dashboard.identity', 'horizon.dashboard.cloudkitty'];
+
+    /* Storage for backend configuration variables which the frontend
+     * should be aware of.
+     */
+    var conf = horizon.conf;
+    conf.static_url = "/dashboard/static/";
+    conf.ajax = {
+      queue_limit: 10
+    };
+    conf.auto_fade_alerts = {
+      delay: 3000,
+      fade_duration: 1500,
+      types: ['alert-success', 'alert-info']
+    };
+    conf.disable_password_reveal =
+      false;
+
+  })(this);
+</script>
+
+    <script type="text/javascript" charset="utf-8">
+  /*
+    Added so that we can append Horizon scoped JS events to
+    the DOM load events without running in to the "horizon"
+    name-space not currently being defined since we load the
+    scripts at the bottom of the page.
+  */
+  var addHorizonLoadEvent = function(func) {
+    var old_onload = window.onload;
+
+    if (typeof window.onload != 'function') {
+      window.onload = func;
+    } else {
+      window.onload = function() {
+        old_onload();
+        func();
+      }
+    }
+  }
+</script>
+
+    
+      
+
+    
+     
+  </head>
+  <body id="splash" ng-app="horizon.app" ng-strict-di="">
+    <noscript>
+      <div class="alert alert-danger text-center javascript-disabled">
+        此应用需要您的浏览器启用JavaScript。
+      </div>
+    </noscript>
+    
+  
+
+
+  
+
+
+  <div class="container login">
+    <div class="row">
+      <div class="col-xs-11 col-sm-8 col-md-6 col-lg-5 horizontal-center">
+        
+<form id="" class="ng-pristine ng-valid ng-scope" method="POST" action="http://192.168.27.121/dashboard/auth/login/" autocomplete="off" ng-controller="hzLoginController">
+  <input type="hidden" name="csrfmiddlewaretoken" value="4VT1yr6Lcnl8gNcHwVe3UHEhxmNweUnIsXsLdADA43bhYA8W5K5jTgXDmB0Eg4gf">
+
+
+
+  <div class="panel panel-default">
+
+    <div class="panel-heading">
+    
+  
+<div class="text-center">
+  <img class="splash-logo" src="https://i.328888.xyz/2023/01/28/jChZq.jpeg" height="133" width="133">
+  <h3 style="text-align:center;font-family:微软雅黑">河南工院云计算竞赛团队</h3>
+</div>
+
+
+  
+      <h3 class="login-title">
+        登录
+      </h3>
+    
+
+    </div>
+
+    <div class="panel-body">
+    
+      
+      
+        <div class="fake_credentials" style="display: none">
+          <input type="text" name="fake_email" value="">
+          <input type="password" name="fake_password" value="">
+        </div>
+      
+      
+      <fieldset hz-login-finder="">
+        
+        
+        
+        
+          <input type="hidden" name="next" value="/dashboard/">
+        
+        
+  <input type="hidden" name="region" value="default" id="id_region">
+
+
+
+
+
+  
+
+<div class="form-group ">
+  
+    
+      <label class="control-label  " for="id_domain">
+          <span class="field-label">域</span></label>
+      <span class="hz-icon-required fa fa-asterisk"></span>
+
+
+
+    
+
+    <div class=" ">
+      
+      
+        
+          <input type="text" name="domain" value="demo" autofocus="autofocus" class="form-control" id="id_domain">
+        
+      
+      
+    </div>
+  
+  
+</div>
+
+
+  
+
+<div class="form-group ">
+  
+    
+      <label class="control-label  " for="id_username">
+          <span class="field-label">用户名</span></label>
+      <span class="hz-icon-required fa fa-asterisk"></span>
+
+
+
+    
+
+    <div class=" ">
+      
+      
+        
+          <input type="text" name="username" class="form-control" id="id_username">
+        
+      
+      
+    </div>
+  
+  
+</div>
+
+
+  
+
+<div class="form-group ">
+  
+    
+      <label class="control-label  " for="id_password">
+          <span class="field-label">密码</span></label>
+      <span class="hz-icon-required fa fa-asterisk"></span>
+
+
+
+    
+
+    <div class=" ">
+      
+      
+        
+          <input type="password" name="password" class="form-control" id="id_password">
+        
+      
+      
+    </div>
+  
+  
+</div>
+
+
+
+      </fieldset>
+    
+    </div>
+
+    <div class="panel-footer">
+      
+  
+        <button id="loginBtn" type="submit" class="btn btn-primary pull-right">
+          <span>登入</span>
+        </button>
+        <div class="clearfix"></div>
+      
+  
+
+
+    </div>
+  </div>
+
+
+      
+</form>
+
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+    <div id="footer">
+      
+  
+
+
+    </div>
+    
+      
+
+
+
+
+
+
+
+
+
+
+
+<script type="text/javascript" src="./登录 - OpenStack Dashboard_files/saved_resource"></script></body></html>

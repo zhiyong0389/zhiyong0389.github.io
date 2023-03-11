@@ -1,0 +1,9 @@
+[centos]
+name=centos
+baseurl=https://jihulab.com/douzhiyong/centos7-5/-/raw/master/
+gpgcheck=0
+
+[iaas]
+name=iaas
+baseurl=https://jihulab.com/douzhiyong/iaas-v2.4/-/raw/master/iaas-repo/
+gpgcheck=0
