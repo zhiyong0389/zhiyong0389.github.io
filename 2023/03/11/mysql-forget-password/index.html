@@ -3,14 +3,13 @@
 
 命令：systemctl status mysqld         #查看状态
 </code></pre>
-<img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022143107277-1604940989.png"/>
-
+<p><img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022143107277-1604940989.png"></p>
 <p> 2.然后跳过授权表启动MySQL服务程序</p>
 <p>这一步主要利用mysqld的 –skip-grant-tables选项</p>
 <p>修改my.cnf配置，添加 skip_grant_tables&#x3D;1启动设置：</p>
 <p>打开&#x2F;etc&#x2F;my.cnf配置文件</p>
 <p>添加skip_grant_tables 一行，然后保存退出</p>
-<p><img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022143416450-1403108370.png"></p>
+<p><img src="http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022143416450-1403108370.png"></p>
 <p> 3.然后启动MySQL并查看状态</p>
 <p>命令：systemctl  start    mysqld </p>
 <p><img src="https://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022143737843-362703308.png"></p>
