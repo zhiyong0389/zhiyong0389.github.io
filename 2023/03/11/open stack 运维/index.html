@@ -1,0 +1,1039 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="shortcut icon" href="/assets/imgs/favicon.ico" type="image/x-icon"><title>openstack运维 | 智勇</title><meta name="keywords" content="openstack 云计算"><meta name="keywords" content="记录个人学习生活"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_3435803_wadmwlqwhps.css"><link rel="stylesheet" href="/style/index.css"><link rel="stylesheet" href="/assets/lib/prettify/prettify.css"><link rel="stylesheet" href="/assets/lib/fancybox/fancybox.css"><meta name="generator" content="Hexo 6.3.0"></head><body><div id="app"><header class="header yu13_p_30" id="header"><div class="header_left"><h1 class="yu13_logo"><a id="logo" href="/">智勇</a></h1></div><div class="header_right"><div class="header_search yu13_cursor yu13_hover" id="search"><i class="yufont icon-sousuo"></i></div><div class="line yu13_p_10"></div><nav class="header_nav"><ul class="nav"><li class="menu_nav"><a href="/"><i class="fas"></i><span> 首页</span></a></li><li class="menu_nav"><a href="/archives"><i class="fas"></i><span> 归档</span></a></li><li class="menu_nav"><a href="/categorys"><i class="fas"></i><span> 分类</span></a></li><li class="menu_nav"><a href="/tags"><i class="fas"></i><span> 标签</span></a></li><li class="menu_nav"><a href="/links"><i class="fas"></i><span> 友情链接</span></a></li></ul></nav></div></header><div class="article_topbg" style="background-image: url('/assets/imgs/top_bg.jpg')"><div class="topbg_container"><h1 class="title">openstack运维</h1><div class="info"><div class="article_meta"><div class="left"><span class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/><a href="/about">智勇</a></span><span><i class="yufont icon-yingyong"></i><span>暂无分类</span></span><span><i class="yufont icon-rili"></i>2023-3-12</span></div></div></div></div></div><div class="container log_container clearfix"><div class="article_content left"> <div class="article_main"><article class="content"><div class="content_text article_text"> <p>openstack 命令自动补全：</p>
+<p>openstack complete &gt; &#x2F;etc&#x2F;bash_completion.d&#x2F;openstack &amp;&amp; bash</p>
+<h1 id="Linux-系统调优"><a href="#Linux-系统调优" class="headerlink" title="Linux 系统调优"></a>Linux 系统调优</h1><h2 id="修改脏数据可用内存百分比为60，默认为30"><a href="#修改脏数据可用内存百分比为60，默认为30" class="headerlink" title="修改脏数据可用内存百分比为60，默认为30"></a>修改脏数据可用内存百分比为60，默认为30</h2><pre><code class="shell">###sysctl -a 显示所有的内核参数
+###sysctl -p 加载内核参数配置，永久有效
+
+[root@controller ~]# sysctl -a | grep dirty
+vm.dirty_background_bytes = 0
+vm.dirty_background_ratio = 10
+vm.dirty_bytes = 0
+vm.dirty_expire_centisecs = 3000
+vm.dirty_ratio = 30
+vm.dirty_writeback_centisecs = 500
+
+echo &#39;vm.dirty_ratio = 60&#39; &gt;&gt; /etc/sysctl.conf
+sysctl -p
+</code></pre>
+<h2 id="修改文件句柄数"><a href="#修改文件句柄数" class="headerlink" title="修改文件句柄数"></a>修改文件句柄数</h2><p>Linux 服务器大并发时，往往需要预先调优 Linux 参数。默认情况下，Linux 最大文件 句柄数为 1024 个。当你的服务器在大并发达到极限时，就会报出“too many open files”。 创建一台云主机，修改相关配置，将控制节点的最大文件句柄数永久修改为 65535。</p>
+<pre><code class="shell">###临时生效
+[root@controller ~]# ulimit -n 65535
+
+###永久生效
+[root@controller ~]# cat &gt;&gt; /etc/security/limits.conf &lt;&lt;EOF
+* soft nofile 65535
+* hard nofile 65535
+EOF
+</code></pre>
+<h2 id="防止-SYN-攻击"><a href="#防止-SYN-攻击" class="headerlink" title="防止 SYN 攻击"></a>防止 SYN 攻击</h2><p>修改 controller 节点的相关配置文件，开启 SYN cookie，防止 SYN 洪水攻击</p>
+<pre><code class="shell">###默认的SYN相关配置
+[root@controller ~]# sysctl -a | grep _syn
+net.ipv4.tcp_max_syn_backlog = 512
+net.ipv4.tcp_syn_retries = 6
+net.ipv4.tcp_synack_retries = 5
+net.ipv4.tcp_syncookies = 1
+
+###参数释义
+tcp_max_syn_backlog是SYN队列的长度，加大SYN队列长度可以容纳更多等待连接的网络连接数。 
+tcp_syncookies是一个开关，是否打开SYN Cookie 功能，该功能可以防止部分SYN攻击。 
+tcp_synack_retries和tcp_syn_retries定义SYN 的重试连接次数，
+将默认的参数减小来控制SYN连接次数的尽量少。
+
+###虽然默认是开启的，但是需要把配置添加到如下文件中
+[root@controller ~]# echo &#39;net.ipv4.tcp_syncookies = 1&#39; &gt;&gt; /etc/sysctl.conf 
+
+###生效配置
+[root@controller ~]# sysctl -p
+</code></pre>
+<h2 id="配置controller节点禁止其他节点可以Ping它"><a href="#配置controller节点禁止其他节点可以Ping它" class="headerlink" title="配置controller节点禁止其他节点可以Ping它"></a>配置controller节点禁止其他节点可以Ping它</h2><pre><code class="shell">[root@controller ~]# sysctl -a |grep icmp_echo
+net.ipv4.icmp_echo_ignore_all = 0
+
+[root@controller ~]# vim /etc/sysctl.conf
+net.ipv4.icmp_echo_ignore_all = 1
+
+[root@controller ~]# sysctl -p
+net.ipv4.icmp_echo_ignore_all = 1
+
+###验证
+[root@controller ~]# cat /proc/sys/net/ipv4/icmp_echo_ignore_all
+1
+</code></pre>
+<h2 id="内核优化"><a href="#内核优化" class="headerlink" title="内核优化"></a>内核优化</h2><p>在使用 Linux 服务器的时候，TCP 协议规定，对于已经建立的连接，网络双方要进行四 次挥手才能成功断开连接，如果缺少了其中某个步骤，将会使连接处于假死状态，连接本身 占用的资源不会被释放。因为服务器程序要同时管理大量连接，所以很有必要保证无用的连 接完全断开，否则大量僵死的连接会浪费许多服务器资源。创建一台 CentOS7.9 云主机，修 改相应的配置文件，分别开启 SYN Cookies；允许将 TIME-WAIT sockets 重新用于新的 TCP 连接；开启 TCP 连接中 TIME-WAIT sockets 的快速回收；修改系統默认的 TIMEOUT 时间 为 30。</p>
+<pre><code class="shell">net.ipv4.tcp_syncookies = 1
+###表示开启SYN Cookies。当出现SYN等待队列溢出时，启用cookies来处理，可防范少量SYNxxx，
+默认为0，表示关闭
+
+net.ipv4.tcp_tw_reuse = 1
+###表示开启重用。允许将TIME-WAIT sockets重新用于新的TCP，默认为0，表示关闭；
+
+net.ipv4.tcp_tw_recycle = 1
+###表示TCP连接中TIME-WAIT sockets的快速回收，默认为0，表示关闭
+
+net.ipv4.tcp_fin_timeout = 30
+###表示如果套接字由本端要求关闭，这个参数决定了它保持在FIN-WAIT-2状态的时间
+</code></pre>
+<h1 id="数据库调优"><a href="#数据库调优" class="headerlink" title="数据库调优"></a>数据库调优</h1><h2 id="将memcache缓存修改为128"><a href="#将memcache缓存修改为128" class="headerlink" title="将memcache缓存修改为128"></a>将memcache缓存修改为128</h2><pre><code class="shell">###修改配置文件将缓存CACHESIZE修改为128
+[root@controller ~]# vim /etc/sysconfig/memcached
+CACHESIZE=128
+
+###重启服务
+[root@controller ~]# systemctl restart memcached
+</code></pre>
+<h2 id="修改-x2F-etc-x2F-my-cnf-文件，完成下列要求："><a href="#修改-x2F-etc-x2F-my-cnf-文件，完成下列要求：" class="headerlink" title="修改&#x2F;etc&#x2F;my.cnf 文件，完成下列要求："></a>修改&#x2F;etc&#x2F;my.cnf 文件，完成下列要求：</h2><p>1.设置数据库支持大小写；</p>
+<p>2.设置数据库缓存 innodb 表的索引，数据，插入数据时的缓冲为 4G；</p>
+<p>3.设置数据库的 log buffer 为 64MB；</p>
+<p>4.设置数据库的 redo log 大小为 256MB；</p>
+<p>5.设置数据库的 redo log 文件组为 2。</p>
+<pre><code class="shell">###可以快速定位参数
+[root@controller ~]# mysql -uroot -p000000
+MariaDB [(none)]&gt; show variables like &#39;innodb_log%&#39;;
+
+[root@controller ~]# vim /etc/my.cnf
+###数据库支持大小写
+lower_case_table_names =1
+###数据库缓存
+innodb_buffer_pool_size = 4G
+###数据库的log buffer即redo日志缓冲
+innodb_log_buffer_size = 64MB
+###设置数据库的redo log即redo日志大小
+innodb_log_file_size = 256MB
+###数据库的redo log文件组即redo日志的个数配置
+innodb_log_files_in_group = 2
+
+###重启服务
+[root@controller ~]# systemctl restart mariadb
+</code></pre>
+<h1 id="Keystone-服务"><a href="#Keystone-服务" class="headerlink" title="Keystone 服务"></a>Keystone 服务</h1><h2 id="创建一个tom用户-密码为000000-email为-x61-x64-x6d-105-110-x40-49-x32-51-x2e-99-111-x6d"><a href="#创建一个tom用户-密码为000000-email为-x61-x64-x6d-105-110-x40-49-x32-51-x2e-99-111-x6d" class="headerlink" title="创建一个tom用户 密码为000000 email为&#x61;&#x64;&#x6d;&#105;&#110;&#x40;&#49;&#x32;&#51;&#x2e;&#99;&#111;&#x6d;"></a>创建一个tom用户 密码为000000 email为<a href="mailto:&#x61;&#x64;&#x6d;&#105;&#110;&#x40;&#49;&#x32;&#51;&#x2e;&#99;&#111;&#x6d;">&#x61;&#x64;&#x6d;&#105;&#110;&#x40;&#49;&#x32;&#51;&#x2e;&#99;&#111;&#x6d;</a></h2><pre><code class="shell">[root@controller ~]# source /etc/keystone/admin-openrch.sh
+[root@controller ~]# openstack user create --domain demo --password 000000 \
+&gt; --email admin@123.com tom
+
+###查看users
+[root@controller ~]# openstack user list
+</code></pre>
+<h2 id="列出一个token"><a href="#列出一个token" class="headerlink" title="列出一个token"></a>列出一个token</h2><pre><code class="shell">[root@controller ~]# openstack token issue
+</code></pre>
+<h2 id="项目管理"><a href="#项目管理" class="headerlink" title="项目管理"></a>项目管理</h2><p>在keystone中创建shop项目添加描述为“hello shop”，完成后使用open stack命令禁用该项目，最后使用openstack命令查看该项目</p>
+<pre><code class="shell">###创建项目
+openstack project create --description &quot;hello shop&quot; --domain demo shop 
+
+###禁用
+openstack project set --disable shop
+
+###查看
+openstack project show shop
+</code></pre>
+<h2 id="用户管理"><a href="#用户管理" class="headerlink" title="用户管理"></a>用户管理</h2><p>使用nova命令查看admin租户的当前配额值，将admin租户的实例配额值提升到13</p>
+<pre><code class="shell">###查看
+nova quota-class-show admin
++----------------------+-------+
+| Quota                | Limit |
++----------------------+-------+
+| instances            | 10    |
+| cores                | 20    |
+| ram                  | 51200 |
+| metadata_items       | 128   |
+| key_pairs            | 100   |
+| server_groups        | 10    |
+| server_group_members | 10    |
++----------------------+-------+
+
+###修改
+nova quota-class-update admin --instances 13
+
+###查看
+nova quota-class-show admin
++----------------------+-------+
+| Quota                | Limit |
++----------------------+-------+
+| instances            | 13    |
+| cores                | 20    |
+| ram                  | 51200 |
+| metadata_items       | 128   |
+| key_pairs            | 100   |
+| server_groups        | 10    |
+| server_group_members | 10    |
++----------------------+-------+
+</code></pre>
+<h1 id="glance镜像服务"><a href="#glance镜像服务" class="headerlink" title="glance镜像服务"></a>glance镜像服务</h1><h2 id="将提供-的-cirros-0-3-4-x86-64-disk-img-镜像（该镜像在-HTTP-服务中，可自行下载）上传至平台，-命名为-cirros，并设置最小启动需要的硬盘为-10G，最小启动需要的内存为-1G。"><a href="#将提供-的-cirros-0-3-4-x86-64-disk-img-镜像（该镜像在-HTTP-服务中，可自行下载）上传至平台，-命名为-cirros，并设置最小启动需要的硬盘为-10G，最小启动需要的内存为-1G。" class="headerlink" title="将提供 的 cirros-0.3.4-x86_64-disk.img 镜像（该镜像在 HTTP 服务中，可自行下载）上传至平台， 命名为 cirros，并设置最小启动需要的硬盘为 10G，最小启动需要的内存为 1G。"></a>将提供 的 cirros-0.3.4-x86_64-disk.img 镜像（该镜像在 HTTP 服务中，可自行下载）上传至平台， 命名为 cirros，并设置最小启动需要的硬盘为 10G，最小启动需要的内存为 1G。</h2><pre><code class="shell">###下载镜像
+[root@controller ~]#  curl -O http://10.18.4.100/cirros-0.3.4-x86_64-disk.img
+                                or
+[root@controller ~]#  wget http://10.18.4.100/cirros-0.3.4-x86_64-disk.img
+
+###创建符合要求的镜像
+[root@controller ~]# openstack image create --min-disk 10 --min-ram 1024 \
+&gt; --file cirros-0.3.3-x86_64-disk.img cirros
+
+###验证
+[root@controller ~]# openstack image list
+</code></pre>
+<h2 id="OpenStack-开放镜像权限"><a href="#OpenStack-开放镜像权限" class="headerlink" title="OpenStack 开放镜像权限"></a>OpenStack 开放镜像权限</h2><p>使 用 OpenStack 私 有 云 平 台 ， 在 OpenStack 平台的 admin 项 目 中 使 用 cirros-0.3.4-x86_64-disk.img 镜像文件创建名为 glance-cirros 的镜像，通过 OpenStack 命令将 glance-cirros 镜像指定 demo 项目进行共享使用。</p>
+<pre><code class="shell">[root@controller ~]# openstack image create --shared --project demo \
+&gt; --file cirros-0.3.4-x86_64-disk.img glance-cirros
+
+[root@controller ~]# glance member-create [镜像id] [域名id]
+[root@controller ~]# glance member-update [镜像id] [域名id] accepted
+</code></pre>
+<h2 id="后端配置文件管理"><a href="#后端配置文件管理" class="headerlink" title="后端配置文件管理"></a>后端配置文件管理</h2><p>进入到 glance 后端存储目录中，使用 qemu 命令查看任意的一个镜像信息。 使用 du 命令查看 nova 主配置文件大小。</p>
+<pre><code class="shell">[root@controller ~]# cd /var/lib/glance/image &amp;&amp; ls
+qemu-img info xxxxxxxx
+
+[root@controller ~]# du -sh /etc/nova/nova.conf
+</code></pre>
+<h2 id="后端配置文件管理-1"><a href="#后端配置文件管理-1" class="headerlink" title="后端配置文件管理"></a>后端配置文件管理</h2><p>请修改glance后端配置文件，将项目的映像存储限制为10G，完成后重启glance服务</p>
+<pre><code class="shell">bc计算出10G
+1024^3*10
+10737418240
+
+vim /etc/glance/glance-api.conf (/user_storage)
+user_storage_quota = 10737418240
+
+systemctl restart openstack-glance-*
+</code></pre>
+<h2 id="OpenStack-Glance-镜像管理"><a href="#OpenStack-Glance-镜像管理" class="headerlink" title="OpenStack Glance 镜像管理"></a>OpenStack Glance 镜像管理</h2><p>使用自行搭建的 OpenStack 平台。在 HTTP 服务中存在一个镜像为 CentOS7.5-compress.qcow2 的镜像，请使用 qemu 相关命令，对该镜像进行压缩，压缩后的 镜像命名为 chinaskill-js-compress.qcow2 并存放在&#x2F;root 目录下。</p>
+<pre><code class="shell">[root@controller ~]# qemu-img convert -c -O qcow2 centos7_33.qcow2 compress_newdisk.qcow2
+
+###解释
+
+-c  压缩
+
+-O qcow2 输出格式为 qcow2
+
+centos7_33.qcow2被压缩文件路径
+
+compress_newdisk.qcow2压缩完成后文件路径
+</code></pre>
+<p>使用qemu-img相关命令，查询Gmirror1镜像的compat版本，然后将Gmirror1镜像的campat版本修改为0.10（该操作是为了适配某些低版本的云平台）</p>
+<pre><code class="shell">[root@controller ~]# cd /var/lib/glance/images/
+
+###修改campat版本
+[root@controller ~]# qemu-img amend -f qcow2 -o compat=0.10 [镜像id]
+
+###查看镜像信息
+[root@controller ~]# qemu-img info [镜像id]
+</code></pre>
+<p>某OpenStack云平台有两个租户，A租户与B租户，分别属于两个部门，该公司对镜像的管理比较严格， 镜像都由管理员进行上传和权限管理。通过管理员上传该镜像，并使用相关命令开放镜像权限给A租 户，B租户不可见。</p>
+<pre><code class="shell">[root@controller ~]# glance member-create 1fa9cbfe-392f-437e-ad18-f00987415b15 \
+&gt; df58511d2c914690b48e89f1e512ae6b
+
+###镜像ID 1fa9cbfe-392f-437e-ad18-f00987415b15
+
+###用户A ID df58511d2c914690b48e89f1e512ae6b
+
+[root@openstack ~]# glance member-update 1fa9cbfe-392f-437e-ad18-f00987415b15
+df58511d2c914690b48e89f1e512ae6b accepted
+</code></pre>
+<h2 id="改-glance-存储后端"><a href="#改-glance-存储后端" class="headerlink" title="改 glance 存储后端"></a>改 glance 存储后端</h2><p>使用赛项提供的 OpenStack 私有云平台，创建一台云主机（镜像使用 CentOS7.5，flavor 使用带临时 磁盘 50G 的），配置该主机为 nfs 的 server 端，将该云主机中的&#x2F;mnt&#x2F;test 目录进 行共享（目录不存 在可自行创建）。然后配置 controller 节点为 nfs 的 client 端，要求将&#x2F;mnt&#x2F;test 目录作为 glance 后端 存储的挂载目录。配置完成后提交 controller 控制节点的用户名、密码 和 IP 地址到答题框。</p>
+<pre><code class="shell">###创建一台云主机，创建成功如下
+
+###安装nfs rpcbind软件包
+[root@localhost ~]# yum install -y nfs-utils rpcbind
+[root@localhost ~]# mkdir /mnt/test
+
+[root@localhost ~]# vim /etc/exports
+/mnt/test *(rw)
+
+[root@localhost ~]# systemctl start rpcbind
+[root@localhost ~]# systemctl enable rpcbind
+[root@localhost ~]# systemctl start nfs
+[A[root@localhost ~]# systemctl enable nfs
+
+[root@localhost ~]# showmount -e 192.168.10.4
+Export list for 192.168.10.4:
+/mnt/test *
+
+###控制节点操作
+[root@controller ~]# mount -t nfs 192.168.10.4:/mnt/test  \
+&gt;  /var/lib/glance/images/
+
+[root@controller ~]# chown -R glance:glance /var/lib/glance/
+
+[root@controller ~]# ls -ld /var/lib/glance/
+drwxr-xr-x. 3 glance glance 20 Nov 10 10:54 /var/lib/glance/
+
+### mount查看一下效果
+[root@controller ~]# mount 
+192.168.10.4:/mnt/test on /var/lib/glance/images type nfs4
+(rw,relatime,vers=4.1,rsize=262144,wsize=262144,namlen=255,hard,proto=tcp,po
+rt=0,timeo=600,retrans=2,sec=sys,clientaddr=192.168.10.130,local_lock=none,a
+ddr=192.168.10.4)
+</code></pre>
+<h2 id="glance对接cinder"><a href="#glance对接cinder" class="headerlink" title="glance对接cinder"></a>glance对接cinder</h2><p>在自行搭建的 OpenStack平台中修改相关参数，使 glance 可以使用 cinder作为后端存储， 将镜像存储于 cinder 卷中。使用 cirros-0.3.4-x86_64-disk.img 文件创建 cirros-image 镜像存储 于 cirros-cinder 卷中，通过 cirros-image 镜像使用 cinder 卷启动盘的方式进行创建虚拟机。</p>
+<pre><code class="shell">###修改/etc/glance/glance-api.conf
+###为了允许镜像服务使用cinder作为后端存储，在stores=file,http,swift中增加cinder
+
+[root@controller ~]# vim /etc/glance/glance-api.conf
+[glance_store]
+stores = file,http,swift,cinder
+default_store = cinder
+filesystem_store_datadir = /var/lib/glance/images/
+
+###为了能够解析locations信息，需要将show_multiple_locations修改为True
+ #show_multiple_locations = false
+###取消注释改为True
+
+###修改/etc/cinder/cinder.conf
+
+allowed_direct_url_schemes  修改为  cinder
+image_upload_use_cinder_backend  设置为  True
+image_upload_use_internal_tenant = True
+
+###重启glance cinder 服务
+###创建镜像查看locations项是否为cinder
+</code></pre>
+<h2 id="将swift存储作为镜像服务的后端存储"><a href="#将swift存储作为镜像服务的后端存储" class="headerlink" title="将swift存储作为镜像服务的后端存储"></a>将swift存储作为镜像服务的后端存储</h2><pre><code class="shell">[root@controller ~]# vim /etc/glance/glance-api.conf
+[glance_store]
+stores = glance.store.swift.Store
+default_store = swift
+swift_store_region = RegionOne
+swift_store_endpoint_type = internalURl
+swift_store_container = glance
+swift_store_large_object_size = 5120
+swift_store_large_object_chunk_size = 200
+swift_store_create_contaienr_on_put = True
+swift_store_multi_tenant = True
+swift_store_admin_tenants = service
+swift_store_auth_address = http://container:5000/v3.0/
+swift_store_user = glance
+swift_store_key = 000000
+</code></pre>
+<h1 id="nova计算服务"><a href="#nova计算服务" class="headerlink" title="nova计算服务"></a>nova计算服务</h1><h2 id="使用nova命令创建一个名为t，id为5，内存为2048M，磁盘容量为10GB，vCPU数量为2的云主机类型。"><a href="#使用nova命令创建一个名为t，id为5，内存为2048M，磁盘容量为10GB，vCPU数量为2的云主机类型。" class="headerlink" title="使用nova命令创建一个名为t，id为5，内存为2048M，磁盘容量为10GB，vCPU数量为2的云主机类型。"></a>使用nova命令创建一个名为t，id为5，内存为2048M，磁盘容量为10GB，vCPU数量为2的云主机类型。</h2><pre><code class="shell">[root@controller ~]# nova flavor-create t 5 2048 10 2   
+                        or
+[root@controller ~]# openstack flavor create --id 5 --ram 2048 --disk 10 --vcpus 2 t
+</code></pre>
+<h2 id="修改-nova-相关配置文件，解决因等待时间过长而导致虚拟机启动超时从而获取不-到-IP-地址而报错失败的问题。"><a href="#修改-nova-相关配置文件，解决因等待时间过长而导致虚拟机启动超时从而获取不-到-IP-地址而报错失败的问题。" class="headerlink" title="修改 nova 相关配置文件，解决因等待时间过长而导致虚拟机启动超时从而获取不 到 IP 地址而报错失败的问题。"></a>修改 nova 相关配置文件，解决因等待时间过长而导致虚拟机启动超时从而获取不 到 IP 地址而报错失败的问题。</h2><pre><code class="shell">###查找关键字
+[root@controller ~]# cat /etc/nova/nova.conf |grep vif_plugging_is_fatal
+vif_plugging_is_fatal=false
+
+###重启
+[root@controller ~]# systemctl restart openstack-nova*
+</code></pre>
+<h2 id="OpenStack-Nova-清除缓存"><a href="#OpenStack-Nova-清除缓存" class="headerlink" title="OpenStack Nova 清除缓存"></a>OpenStack Nova 清除缓存</h2><p>在 OpenStack 平台的一台计算节点创建虚拟机，若是第一次在该节点创建次虚拟机，会 先将镜像文件复制到该计算节点目录&#x2F;var&#x2F;lib&#x2F;nova&#x2F;instances&#x2F;_base。长期下来，该目录会占用 比较大的磁盘空间而要清理。可以通过修改 nova 的配置文件来自动清理该缓存目录，即在 该节点没有使用某镜像启动的云主机，那么这个镜像在过一定的时间后会被自动删除。</p>
+<pre><code class="shell">###修改/etc/nova/nova.conf
+
+计算节点
+###允许删除不再使用的、旧的image文件，以节省计算节点硬盘空间
+remove_unused_base_images = True 
+
+###如无instance使用，则原image文件在1天之后会被删除
+remove_unused_original_minimum_age_seconds = 86400 
+
+###如无instance使用，resize过的image文件（cow格式）在1小时之后会被删除
+remove_unused_resized_minimum_age_seconds = 3600 
+
+###镜像文件的存储路径，该目录是相对于state_path的路径名
+image_cache_subdirectory_name = _base 
+
+###重启nova服务
+</code></pre>
+<h2 id="动态调整云主机类型"><a href="#动态调整云主机类型" class="headerlink" title="动态调整云主机类型"></a>动态调整云主机类型</h2><pre><code class="shell">[root@controller ~]# vim /etc/nova/nova.conf
+allow_resize_to_same_hosts=True
+scheduler_default_filters=RetryFilter,AvailabilityZoneFilter,RamFilter,ComputeFilter,
+ComputeCapabilitiesFilter,ImagePropertiesFilter,ServerGroupAntiAffinityFilter,
+ServerGroupAffinityFilter
+
+[root@controller ~]# systemctl restart openstack-nova-* libvirtd
+</code></pre>
+<h2 id="云主机保存快照"><a href="#云主机保存快照" class="headerlink" title="云主机保存快照"></a>云主机保存快照</h2><p>给云主机做快照并保存在本机 &#x2F;root&#x2F;目录下</p>
+<pre><code class="shell">openstack server image create VM1 --name VM1-image-1
+openstack image save --file /root/VM1-image-1.qcow2 VM1-image-1
+</code></pre>
+<p>在openstack私有云平台上，将云主机VM1保存为qcow2格式的快照并保存到controller节 点&#x2F;root&#x2F;cloudsave目录下，保存名字为csccvm.qcow2。</p>
+<pre><code class="shell">[root@controller ~]# mkdir cloudsave
+[root@controller ~]# nova image-create VM1 vm1
+[root@controller ~]# openstack image list
++--------------------------------------+--------+--------+
+| ID                                   | Name   | Status |
++--------------------------------------+--------+--------+
+| 1cd8a7ee-26d3-4af9-a7d8-15d88cdfa1f5 | cirros | active |
+| d672affc-fefb-4af3-b185-96c009193045 | vm1    | active |
++--------------------------------------+--------+--------+
+
+[root@controller ~]# openstack image save vm1 --file
+/root/cloudsave/csccvm.qcow2
+
+[root@controller ~]# ll cloudsave/
+total 21568
+-rw-r--r-- 1 root root 22085632 Aug 8 04:11 csccvm.qcow2
+</code></pre>
+<h2 id="修改云主机内存"><a href="#修改云主机内存" class="headerlink" title="修改云主机内存"></a>修改云主机内存</h2><p>使用OpenStack私有云平台，找到virsh中ID为10的云主机（若不存在请自行创建）。在云主机所在的物 理节点，进入virsh交互式界面，使用virsh命令，将memory虚拟机的内存调整为5242880KB大小</p>
+<pre><code class="shell">[root@controller ~]# openstack server create --image cirros --flavor Fmin --network ext VM2
+
+###计算节点操作
+[root@compute ~]# virsh list --all
+[root@compute ~]# virsh shutdown instance-00000002
+
+###编辑
+[root@compute ~]# virsh edit instance-00000002
+
+[root@compute ~]# virsh start instance-00000002
+</code></pre>
+<h2 id="冷迁移"><a href="#冷迁移" class="headerlink" title="冷迁移"></a>冷迁移</h2><pre><code class="shell">###拷贝虚拟机到新的计算节点
+[root@computer01 ~]# scp -r e866c977-eb01-460e-bf12-5208d54600f5/  \
+&gt; 192.168.176.64:/var/lib/nova/instances/
+
+###修改文件属性
+[root@computer02 ~]# chown -R nova.nova e866c977-eb01-460e-bf12-5208d54600f5/
+
+###更新数据库
+[root@node1 ~]# use nova;
+update instances set host=&#39;controller&#39;, node=&#39;controller&#39;, launched_on=&#39;controller&#39; 
+where uuid=&#39;c47aea85-6a9b-4d94-b1fd-aac2268c9913&#39;;
+
+###启动虚拟机
+</code></pre>
+<h1 id="neutron网络服务"><a href="#neutron网络服务" class="headerlink" title="neutron网络服务"></a>neutron网络服务</h1><h2 id="创建外部网络ext-net和子网ext-subnet-创建内网int-net和子网int-subnet，创建路由router-1（并连通内外网）"><a href="#创建外部网络ext-net和子网ext-subnet-创建内网int-net和子网int-subnet，创建路由router-1（并连通内外网）" class="headerlink" title="创建外部网络ext-net和子网ext-subnet 创建内网int-net和子网int-subnet，创建路由router-1（并连通内外网）"></a>创建外部网络ext-net和子网ext-subnet 创建内网int-net和子网int-subnet，创建路由router-1（并连通内外网）</h2><pre><code class="shell">###创建外部网络
+[root@controller ~]# openstack network create --external --enable ext-net
+###创建子网
+[root@controller ~]# openstack subnet create --network ext-net --subnet-range 192.168.x.0/24 \
+&gt; --allocation-pool start=192.168.x.100,end=192.168.x.200 --gateway 192.168.x.1 ext-subnet
+
+###创建内部网络
+[root@controller ~]# openstack network create --internal --enable int-net
+###创建子网
+[root@controller ~]# openstack subnet create --network int-net --subnet-range 10.10.x.0/24 \
+&gt; --allocation-pool start=10.10.x.100,end=10.10.x.200 --gateway 10.10.x.1 int-subnet
+
+###创建路由
+[root@controller ~]# openstack router create router-1
+[root@controller ~]# openstack router add subnet router-1 ext-subnet
+[root@controller ~]# openstack router add subnet router-1 int-subnet
+</code></pre>
+<h2 id="安全组管理"><a href="#安全组管理" class="headerlink" title="安全组管理"></a>安全组管理</h2><p>创建名为“group_web”的安全组，该安全组描述为“Custom security group”，用openstack命令为安全组添加icmp规则和ssh规则允许任意IP地址访问</p>
+<pre><code class="shell">###创建安全组
+openstack security group create --description &quot;Custom security group&quot; group_web
+
+###添加80访问
+openstack security group rule create --ingress --ethertype IPv4 --protocol tcp \
+&gt; --dst-port 80:80 group_web
+
+###添加22访问
+openstack security group rule create --ingress --ethertype IPv4 --protocol tcp \
+&gt; --dst-port 22:22 group_web
+
+###添加icmp规则
+openstack security group rule create --ingress --protocol icmp group_web
+</code></pre>
+<h1 id="dashboard服务"><a href="#dashboard服务" class="headerlink" title="dashboard服务"></a>dashboard服务</h1><h2 id="修改nova配置文件使之能通过公网IP范文dashboard首页"><a href="#修改nova配置文件使之能通过公网IP范文dashboard首页" class="headerlink" title="修改nova配置文件使之能通过公网IP范文dashboard首页"></a>修改nova配置文件使之能通过公网IP范文dashboard首页</h2><pre><code class="shell">[root@controller ~]# vim /etc/nova/nova.conf
+###修改为master公网IP
+novncproxy_base_url=http://123.123.123.123:6080/vnc_auto.html  
+
+###重启服务生效配置
+[root@controller ~]# systemctl restart httpd
+</code></pre>
+<h2 id="将-Dashboard-中的-Django-数据修改为存储在文件中"><a href="#将-Dashboard-中的-Django-数据修改为存储在文件中" class="headerlink" title="将 Dashboard 中的 Django 数据修改为存储在文件中"></a>将 Dashboard 中的 Django 数据修改为存储在文件中</h2><p>（此种修改解决了 ALL-in-one 快照在其 他云平台 Dashboard 不能访问的问题）</p>
+<pre><code class="shell">[root@controller ~]# cat /etc/openstack-dashboard/local_settings |grep django
+SESSION_ENGINE = &#39;django.contrib.sessions.backends.cache&#39;
+###默认存在cache里，改为file
+SESSION_ENGINE = &#39;django.contrib.sessions.backends.file&#39;
+
+###重启服务生效配置
+[root@controller ~]# systemctl restart httpd
+</code></pre>
+<h2 id="请使用-curl-指令获取-dashboard-首页信息"><a href="#请使用-curl-指令获取-dashboard-首页信息" class="headerlink" title="请使用 curl 指令获取 dashboard 首页信息"></a>请使用 curl 指令获取 dashboard 首页信息</h2><pre><code class="shell">[root@controller ~]# curl -i http://192.168.44.10/dashboard
+</code></pre>
+<h2 id="云平台安全策略提升"><a href="#云平台安全策略提升" class="headerlink" title="云平台安全策略提升"></a>云平台安全策略提升</h2><pre><code class="shell">###下载所需软件
+[root@controller ~]# yum isntall -y mod_wsgi mod_ssl
+
+[root@controller ~]# vim /etc/httpd/conf.d/ssl.conf
+SSLProtocol all -SSLv2 -SSLv3 删除-SSLv3 （75行）
+
+[root@controller ~]# vim /etc/openstack-dashboard/local_settings
+CSRF_COOKIE_SECURE = Ture (49行)
+SESSION_COOKIE_SECURE = Ture
+USE_SSL = Ture
+SESSION_COOKIE_HTTPONLY = Ture
+</code></pre>
+<h1 id="swift服务"><a href="#swift服务" class="headerlink" title="swift服务"></a>swift服务</h1><h2 id="使用命令创建一个名叫-examcontainer-的容器，将-cirros-0-3-4-x86-64-disk-img-镜像上传到-examcontainer-容器中，并-设置分段存放，每一段大小为-10M。"><a href="#使用命令创建一个名叫-examcontainer-的容器，将-cirros-0-3-4-x86-64-disk-img-镜像上传到-examcontainer-容器中，并-设置分段存放，每一段大小为-10M。" class="headerlink" title="使用命令创建一个名叫 examcontainer 的容器，将 cirros-0.3.4-x86_64-disk.img 镜像上传到 examcontainer 容器中，并 设置分段存放，每一段大小为 10M。"></a>使用命令创建一个名叫 examcontainer 的容器，将 cirros-0.3.4-x86_64-disk.img 镜像上传到 examcontainer 容器中，并 设置分段存放，每一段大小为 10M。</h2><pre><code class="shell">[root@controller ~]# openstack container create examcontainer
+[root@controller ~]# openstack container list
+
+[root@controller ~]# swift post examcontainer
+[root@controller ~]# swift list
+###下载镜像
+[root@controller ~]# curl -O http://10.18.4.46/cirros-0.3.4-x86_64-disk.img
+
+###swfit切片上传cirros
+###-S 上载不大于&lt;size&gt;（字节）的段中的文件，然后创建一个“清单”文件，
+该文件将下载所有段，就像它是原始文件一样。
+[root@controller ~]# swift upload examcontainer -S 10485760 cirros-0.3.4-x86_64-disk.img
+[root@controller ~]# swift stat examcontainer
+</code></pre>
+<h1 id="cinder服务"><a href="#cinder服务" class="headerlink" title="cinder服务"></a>cinder服务</h1><h2 id="请在计算节点，对块存储进行扩容操作，-即在计算节点再分出一个-5G-的分区，加入到-cinder-块存储的后端存储中去。"><a href="#请在计算节点，对块存储进行扩容操作，-即在计算节点再分出一个-5G-的分区，加入到-cinder-块存储的后端存储中去。" class="headerlink" title="请在计算节点，对块存储进行扩容操作， 即在计算节点再分出一个 5G 的分区，加入到 cinder 块存储的后端存储中去。"></a>请在计算节点，对块存储进行扩容操作， 即在计算节点再分出一个 5G 的分区，加入到 cinder 块存储的后端存储中去。</h2><pre><code class="shell">###创建物理卷
+[root@compute ~]# pvcreate /dev/vdb4
+
+###扩展cinder-volume卷组
+[root@compute ~]# vgextend cinder-volumes /dev/vdb4
+
+###验证
+[root@compute ~]# vgdisplay
+</code></pre>
+<h2 id="创建名为lvm的卷类型，创建该类型规格键值对，要求lvm卷类型对应cinder后端驱动lvm所管理的存储资源，名字lvm-test，大小1G的云硬盘并查询该云硬盘的详细信息-并附加到云主机上"><a href="#创建名为lvm的卷类型，创建该类型规格键值对，要求lvm卷类型对应cinder后端驱动lvm所管理的存储资源，名字lvm-test，大小1G的云硬盘并查询该云硬盘的详细信息-并附加到云主机上" class="headerlink" title="创建名为lvm的卷类型，创建该类型规格键值对，要求lvm卷类型对应cinder后端驱动lvm所管理的存储资源，名字lvm_test，大小1G的云硬盘并查询该云硬盘的详细信息 并附加到云主机上"></a>创建名为lvm的卷类型，创建该类型规格键值对，要求lvm卷类型对应cinder后端驱动lvm所管理的存储资源，名字lvm_test，大小1G的云硬盘并查询该云硬盘的详细信息 并附加到云主机上</h2><pre><code class="shell">[root@controller ~]# cinder type-create lvm
+[root@controller ~]# cinder type-key lvm set volume_backend_name=LVM
+[root@controller ~]# cinder create --volume-type lvm --name lvm_test 1
+[root@controller ~]# openstack server add volume server-1 lvm_test
+</code></pre>
+<h1 id="Manila-服务"><a href="#Manila-服务" class="headerlink" title="Manila 服务"></a>Manila 服务</h1><h2 id="创建-default-share-type-共享类型（不使用驱动程序支持），接着创建一个大小为-2G-的共享存储名为-share01-并开放-share01-目录对-OpenStack-管理网段使用权限。"><a href="#创建-default-share-type-共享类型（不使用驱动程序支持），接着创建一个大小为-2G-的共享存储名为-share01-并开放-share01-目录对-OpenStack-管理网段使用权限。" class="headerlink" title="创建 default_share_type 共享类型（不使用驱动程序支持），接着创建一个大小为 2G 的共享存储名为 share01 并开放 share01 目录对 OpenStack 管理网段使用权限。"></a>创建 default_share_type 共享类型（不使用驱动程序支持），接着创建一个大小为 2G 的共享存储名为 share01 并开放 share01 目录对 OpenStack 管理网段使用权限。</h2><pre><code class="shell">###创建不适用驱动程序支持的default_share_type共享类型
+[root@controller ~]# manila type-create default_share_type False
+
+###创建共享卷
+[root@controller ~]# manila create NFS 2 --name share01
+
+###开放share01目录对OpenStack管理网段使用权限
+[root@controller ~]# manila access-allow share01 ip 10.18.4.0/24 --access-level rw
+
+###验证
+[root@controller ~]# manila type-list
+[root@controller ~]# manila list
+</code></pre>
+<h1 id="Barbican-服务"><a href="#Barbican-服务" class="headerlink" title="Barbican 服务"></a>Barbican 服务</h1><h2 id="使用-openstack-命令创建一个名为-secret01-的密钥"><a href="#使用-openstack-命令创建一个名为-secret01-的密钥" class="headerlink" title="使用 openstack 命令创建一个名为 secret01 的密钥"></a>使用 openstack 命令创建一个名为 secret01 的密钥</h2><pre><code class="shell">###创建密钥
+[root@controller ~]# openstack secret store --name secret01 --payload secretkey
+</code></pre>
+<h1 id="Cloudkitty-服务"><a href="#Cloudkitty-服务" class="headerlink" title="Cloudkitty 服务"></a>Cloudkitty 服务</h1><h2 id="启用-hashmap-评级-模块，接着创建-volume-thresholds-组，创建服务匹配规则-volume-size，并设置每-GB-的价-格为-0-01。接下来对应大量数据设置应用折扣，在组-volume-thresholds-中创建阈值，设置-若超过-50GB-的阈值，应用-2-的折扣（0-98）。"><a href="#启用-hashmap-评级-模块，接着创建-volume-thresholds-组，创建服务匹配规则-volume-size，并设置每-GB-的价-格为-0-01。接下来对应大量数据设置应用折扣，在组-volume-thresholds-中创建阈值，设置-若超过-50GB-的阈值，应用-2-的折扣（0-98）。" class="headerlink" title="启用 hashmap 评级 模块，接着创建 volume_thresholds 组，创建服务匹配规则 volume.size，并设置每 GB 的价 格为 0.01。接下来对应大量数据设置应用折扣，在组 volume_thresholds 中创建阈值，设置 若超过 50GB 的阈值，应用 2%的折扣（0.98）。"></a>启用 hashmap 评级 模块，接着创建 volume_thresholds 组，创建服务匹配规则 volume.size，并设置每 GB 的价 格为 0.01。接下来对应大量数据设置应用折扣，在组 volume_thresholds 中创建阈值，设置 若超过 50GB 的阈值，应用 2%的折扣（0.98）。</h2><pre><code class="shell">###启用hashmap
+[root@controller ~]# openstack rating module enable hashmap 
+
+###创建hashmap service
+[root@controller ~]# openstack rating hashmap service create volume.size 
++-------------+--------------------------------------+
+| Name        | Service ID                           |
++-------------+--------------------------------------+
+| volume.size | 09da4a8b-b849-4715-a8e3-7cd12dfcf46e |
++-------------+--------------------------------------+
+
+###创建hashmap service group
+[root@controller ~]# openstack rating hashmap group create volume_thresholds 
+openstack rating hashmap group create volume_thresholds 
++-------------------+--------------------------------------+
+| Name              | Group ID                             |
++-------------------+--------------------------------------+
+| volume_thresholds | 8b3dfe73-5efb-46ab-a93b-dc9519063ed6 |
++-------------------+--------------------------------------+
+
+###创建volume单价
+[root@controller ~]# openstack rating hashmap mapping create \
+&gt; -s 09da4a8b-b849-4715-a8e3-7cd12dfcf46e -g 8b3dfe73-5efb-46ab-a93b-dc9519063ed6 \
+&gt; -t flat 0.01 
+
+###创建service rule
+[root@controller ~]# openstack rating hashmap threshold create \
+&gt; -s 09da4a8b-b849-4715-a8e3-7cd12dfcf46e -g 8b3dfe73-5efb-46ab-a93b-dc9519063ed6 \
+&gt; -t rate 50 0.98
+</code></pre>
+<h1 id="OpenStack-平台内存优化"><a href="#OpenStack-平台内存优化" class="headerlink" title="OpenStack 平台内存优化"></a>OpenStack 平台内存优化</h1><h2 id="搭建完-OpenStack-平台后，关闭系统的内存共享，打开透明大页。"><a href="#搭建完-OpenStack-平台后，关闭系统的内存共享，打开透明大页。" class="headerlink" title="搭建完 OpenStack 平台后，关闭系统的内存共享，打开透明大页。"></a>搭建完 OpenStack 平台后，关闭系统的内存共享，打开透明大页。</h2><pre><code class="shell">###关闭系统的内存共享
+[root@controller ~]# echo &#39;never&#39; &gt; /sys/kernel/mm/transparent_hugepage/defrag
+
+###验证
+[root@controller ~]# cat /sys/kernel/mm/transparent_hugepage/defrag
+always madvise [never]
+</code></pre>
+<h2 id="OpenStack-消息队列调优"><a href="#OpenStack-消息队列调优" class="headerlink" title="OpenStack 消息队列调优"></a>OpenStack 消息队列调优</h2><p>OpenStack 各服务内部通信都是通过 RPC 来交互，各 agent 都需要去连接 RabbitMQ； 随着各服务 agent 增多，MQ 的连接数会随之增多，最终可能会到达上限，成为瓶颈。使用 自行搭建的OpenStack私有云平台，分别通过用户级别、系统级别、配置文件来设置RabbitMQ 服务的最大连接数为 10240。</p>
+<pre><code class="shell">### 1)用户级别的配置
+###limits.conf 用于对用户资源进行限制，如进程数/文件数等等
+[root@controller ~]# vim /etc/security/limits.conf 
+* soft nofile 10240
+* hard nofile 10240
+
+###退出登陆以下 才可以生效
+[root@controller ~]# logout
+
+
+###检验是否生效
+[root@controller ~]# ulimit -n #检验配置是否生效
+10240
+
+### 2)系统级别的配置
+###系统级别主要配置 sysctl.conf 这个文件
+[root@controller ~]# vi /etc/sysctl.conf
+fs.file-max=10240
+
+[root@controller ~]# sysctl -p #执行这个生效
+fs.file-max = 10240
+
+###配置RabbitMQ的配置文件
+[root@controller ~]# vim /usr/lib/systemd/system/rabbitmq-server.service
+###在service模块下添加即可
+LimitNOFILE=10240
+
+###重启服务生效
+[root@controller ~]# systemctl restart rabbitmq-server 
+
+###检验命令
+[root@controller ~]# rabbitmqctl status
+[&#123;total_limit,10140&#125;, ###返回这个表示成功了
+    &#123;total_used,9&#125;,
+    &#123;sockets_limit,9124&#125;,
+    &#123;sockets_used,7&#125;]&#125;,
+</code></pre>
+<h2 id="kvm调优"><a href="#kvm调优" class="headerlink" title="kvm调优"></a>kvm调优</h2><p>在自行搭建的 OpenStack 私有云平台或赛项提供的 all-in-one 平台上，修改相关配置文 件，启用-device virtio-net-pci in kvm</p>
+<pre><code class="shell">[root@controller ~]# vim /etc/nova/nova.conf
+[libvirt]
+libvirt_use_virtio_for_bridges=true
+
+[root@controller ~]# systemctl restart openstack-nova*
+</code></pre>
+<h1 id="OpenStack-Heat-运维"><a href="#OpenStack-Heat-运维" class="headerlink" title="OpenStack Heat 运维"></a>OpenStack Heat 运维</h1><pre><code class="shell">###列出heat版本
+[root@controller bin]# openstack orchestration template version list
+heat_template_version.2018-03-02 | hot | 
+heat_template_version.queens
+
+###列出资源类型
+[root@controller bin]# openstack orchestration resource type list
+
+###资源详细属性格式
+[root@controller bin]# openstack orchestration resource type \
+&gt; show OS::Nova::Flavor | grep -vE &quot;^   &quot;  ###四个空格
+</code></pre>
+<h2 id="创建container（容器）"><a href="#创建container（容器）" class="headerlink" title="创建container（容器）"></a>创建container（容器）</h2><p>在自行搭建的 OpenStack 私 有 云 平 台 上 ， 在 &#x2F;root 目录下编写 Heat 模 板 create_container.yaml，要求执行 yaml 文件可以创建名为 heat-swift 的容器。</p>
+<pre><code class="yaml">[root@controller ~]# cat create_container.yaml 
+heat_template_version: 2014-10-16
+resources:
+  container:
+    type: OS::Swift::Container
+    properties:
+      name: heat-swift
+</code></pre>
+<h2 id="创建flavor（云主机类型）"><a href="#创建flavor（云主机类型）" class="headerlink" title="创建flavor（云主机类型）"></a>创建flavor（云主机类型）</h2><pre><code class="yaml">heat_template_version: 2014-10-16
+description: create flavor
+resources:
+  flavor:
+    type: OS::Nova::Flavor
+    properties:
+      name: m1.flavor
+      flavorid: 1234
+      ram: 1024
+      disk: 20
+      vcpus: 1
+</code></pre>
+<h2 id="创建net（网络）"><a href="#创建net（网络）" class="headerlink" title="创建net（网络）"></a>创建net（网络）</h2><pre><code class="yaml">heat_template_version: 2014-10-16
+description: Generated template
+resources:
+  network_1:
+    type: OS::Neutron::Net
+    properties:
+      admin_state_up: true
+      name: Heat-Network
+      shared: false
+  subnet_1:
+    type: OS::Neutron::Subnet
+    properties:
+      allocation_pools:
+      - end: 10.20.2.100
+        start: 10.20.2.10
+      cidr: 10.20.2.0/24
+      enable_dhcp: true
+      host_routes: []
+      ip_version: 4
+      name: Heat-Subnet
+      network_id:
+        get_resource: network_1
+</code></pre>
+<h2 id="创建user（用户）"><a href="#创建user（用户）" class="headerlink" title="创建user（用户）"></a>创建user（用户）</h2><pre><code class="yaml">heat_template_version: 2014-10-16
+description: create user
+resources:
+  users:
+    type: OS::Keystone::User
+    properties:
+      name: heat-user
+      default_project: admin
+      domain: demo
+      password: 123456
+      roles: [&#123;&quot;role&quot;:admin,&quot;project&quot;:admin&#125;]
+</code></pre>
+<h2 id="创建image（镜像）"><a href="#创建image（镜像）" class="headerlink" title="创建image（镜像）"></a>创建image（镜像）</h2><pre><code class="yaml">heat_template_version: queens
+description: create image
+resources:
+  images:
+    type: OS::Glance::Image
+    properties:
+      name: test
+      min_disk: 20 #题目应该会有要求
+      min_ram: 2048
+      disk_format: qcow2
+      container_format: bare
+      location: http://192.168.100.10/cirros-0.5.1-x86_64-disk.img #题目应该会给出一个url链接
+</code></pre>
+<h2 id="创建server（云主机）"><a href="#创建server（云主机）" class="headerlink" title="创建server（云主机）"></a>创建server（云主机）</h2><pre><code class="yaml">heat_template_version: queens
+description: create server
+resources:
+  servers:
+    type: OS::Nova::Server
+    properties:
+      name: vm1
+      image: cirros
+      flavor: test
+      networks: [&#123;&quot;uuid&quot;:d546239c-53f1-4a6f-a116-872727a04d86&#125;]
+</code></pre>
+<h2 id="创建cinder（卷）"><a href="#创建cinder（卷）" class="headerlink" title="创建cinder（卷）"></a>创建cinder（卷）</h2><pre><code class="yaml">heat_template_version: queens
+description: create cinder
+resources:
+  cinder:
+    type: OS::Cinder::Volume
+    properties:
+      name: cinder1
+      volume_type: lvm
+      size: 10
+</code></pre>
+<h1 id="python程序对接openstack-api"><a href="#python程序对接openstack-api" class="headerlink" title="python程序对接openstack api"></a>python程序对接openstack api</h1><pre><code class="shell">openstack image create  *** --debug ###调用整个创建过程
+再找到POST 和data行找到地址和创建内容
+
+难写死了，建议用python软件写好，再复制进去
+</code></pre>
+<h2 id="安装python3"><a href="#安装python3" class="headerlink" title="安装python3"></a>安装python3</h2><pre><code class="shell">1、yum install -y python3
+2、pip3 install certifi-2019.11.28-py2.py3-none-any.whl 
+3、pip3 install urllib3-1.25.11-py3-none-any.whl 
+4、pip3 install idna-2.8-py2.py3-none-any.whl 
+5、pip3 install chardet-3.0.4-py2.py3-none-any.whl
+6、pip3 install requests-2.24.0-py2.py3-none-any.whl
+</code></pre>
+<h2 id="创建flavor（云主机类型）-1"><a href="#创建flavor（云主机类型）-1" class="headerlink" title="创建flavor（云主机类型）"></a>创建flavor（云主机类型）</h2><pre><code class="python">import requests
+import json
+osurl = &quot;http://192.168.100.10&quot;
+body=&#123;
+  &quot;auth&quot;:&#123;
+    &quot;identity&quot;:&#123;
+      &quot;methods&quot;:[&quot;password&quot;],
+      &quot;password&quot;:&#123;
+        &quot;user&quot;:&#123;
+          &quot;id&quot;:&quot;d618c8ee2d234997889b62ee18562ee0&quot;,
+          &quot;password&quot;:&quot;000000&quot;
+        &#125;
+      &#125;
+    &#125;,
+    &quot;scope&quot;:&#123;
+      &quot;project&quot;:&#123;
+        &quot;id&quot;:&quot;5e7709cbbd7c4c0e8733c3f7360d1d38&quot;
+      &#125;
+    &#125;
+  &#125;
+&#125;
+headers = &#123;&#125;
+def get_token():
+  url = osurl+&quot;:5000/v3/auth/tokens&quot;
+  re = requests.post(url,headers=headers,data=json.dumps(body)).headers[&quot;X-Subject-Token&quot;]
+  return re
+def flavor_create():
+  url = osurl+&quot;:8774/v2.1/flavors&quot;
+  headers[&quot;X-Auth-Token&quot;] = get_token()
+  body = &#123;
+    &quot;flavor&quot;:&#123;
+      &quot;name&quot;: &quot;centos7&quot;,
+      &quot;id&quot;: 302,
+      &quot;vcpus&quot;: 2,
+      &quot;ram&quot;: 2048,
+      &quot;disk&quot;: 40,
+    &#125;
+  &#125;
+  re = requests.post(url,data=json.dumps(body),headers=headers).json()
+  print(re)
+  return re
+flavor_create()
+</code></pre>
+<h2 id="创建server（云主机）-1"><a href="#创建server（云主机）-1" class="headerlink" title="创建server（云主机）"></a>创建server（云主机）</h2><pre><code class="python">import requests
+import json
+osurl = &quot;http://192.168.100.10&quot;
+body=&#123;
+  &quot;auth&quot;:&#123;
+    &quot;identity&quot;:&#123;
+      &quot;methods&quot;:[&quot;password&quot;],
+      &quot;password&quot;:&#123;
+        &quot;user&quot;:&#123;
+        &quot;id&quot;:&quot;d618c8ee2d234997889b62ee18562ee0&quot;,
+        &quot;password&quot;:&quot;000000&quot;
+        &#125;
+      &#125;
+    &#125;,
+    &quot;scope&quot;:&#123;
+      &quot;project&quot;:&#123;
+        &quot;id&quot;:&quot;5e7709cbbd7c4c0e8733c3f7360d1d38&quot;
+      &#125;
+    &#125;
+  &#125;
+&#125;
+headers = &#123;&#125;
+def get_token():
+  url = osurl+&quot;:5000/v3/auth/tokens&quot;
+  re = requests.post(url,headers=headers,data=json.dumps(body)).headers[&quot;X-Subject-Token&quot;]
+  return re
+def server_create():
+  url = osurl+&quot;::8774/v2.1/servers&quot;
+  headers[&quot;X-Auth-Token&quot;] = get_token()
+  body=&#123;
+    &quot;server&quot;:&#123;
+      &quot;name&quot;: &quot;psysewe&quot;,
+      &quot;imageRef&quot;: &quot;sdi3jnbf-nce8sm3slfk-cm8w3&quot;,
+      &quot;flavorRef&quot;: &quot;sduifwj8-dnuvwi8-dnde83&quot;,
+      &quot;networks&quot;: [&#123;&quot;uuid&quot;: &quot;bssiksju-sjejr3-sqksjj&quot;&#125;]
+    &#125;
+  &#125;
+  re = requests.post(url,headers=headers,json=body).json()
+  print(re)
+  return re
+server_create()
+</code></pre>
+<h2 id="创建user（用户）-1"><a href="#创建user（用户）-1" class="headerlink" title="创建user（用户）"></a>创建user（用户）</h2><pre><code class="python">def create_user():
+  url = osurl+&quot;:35357/v3/users&quot;
+  headers[&quot;X-Auth-Token&quot;] = get_tokens()
+  body=&#123;
+    &quot;user&quot;:&#123;
+      &quot;name&quot;: &quot;centos7&quot;,
+      &quot;domain_id&quot;: &quot;c71306cc8e9b40c093e6961d18ff85c6&quot;,
+      &quot;password&quot;: &quot;000000&quot;
+    &#125;
+  &#125;
+  re = requests.post(url,headers=headers,json=body).json()
+  print(re)
+  return re
+create_user()
+</code></pre>
+<h2 id="创建project（项目）"><a href="#创建project（项目）" class="headerlink" title="创建project（项目）"></a>创建project（项目）</h2><pre><code class="python">def create_project():
+  url = osurl+&quot;:35357/v3/projects&quot;
+  headers[&quot;X-Auth-Token&quot;] = get_tokens()
+  body=&#123;
+    &quot;project&quot;:&#123;
+      &quot;name&quot;: &quot;centos7&quot;,
+      &quot;domain_id&quot;: &quot;c71306cc8e9b40c093e6961d18ff85c6&quot;
+    &#125;
+  &#125;
+  re = requests.post(url,headers=headers,json=body).json()
+  print(re)
+  return re
+create_project()
+</code></pre>
+<h2 id="创建volume（卷）"><a href="#创建volume（卷）" class="headerlink" title="创建volume（卷）"></a>创建volume（卷）</h2><pre><code class="python">def flavor_create():
+  default_project = &#123;&#125;
+  domain = &#123;&#125;
+  url = osurl+&quot;:8776/v2/138470dc0251402aa02fd286d373b4bd/volumes&quot;
+  headers[&quot;X-Auth-Token&quot;] = get_token()
+  body=&#123;
+    &quot;volume&quot;:&#123;
+      &quot;name&quot;: &quot;psysewe&quot;,
+      &quot;size&quot;: &quot;1&quot;,
+      &quot;type&quot;: &quot;lvm&quot;
+    &#125;
+  &#125;
+  re = requests.post(url,headers=headers,json=body).json()
+  print(re)
+  return re
+flavor_create()
+</code></pre>
+<h1 id="Redis-一主二从三哨兵模式"><a href="#Redis-一主二从三哨兵模式" class="headerlink" title="Redis 一主二从三哨兵模式"></a>Redis 一主二从三哨兵模式</h1><p>使用提供的 OpenStack 私有云平台，申请三台 CentOS7.9 系统的云主机，使用提供的 http 源，在三个节点自行安装 Redis 服务并启动，配置 Redis 的访问需要密码，密码设置为 123456。然后将这三个 Redis 节点配置为 Redis 的一主二从三哨兵架构，即一个 Redis 主节 点，两个从节点，三个节点均为哨兵节点。</p>
+<pre><code class="shell">###通过iaas源直接下载redis或通过编译安装make|make install
+
+主节点
+###修改配置文件/etc/redis.conf
+bind 127.0.0.1     ### 修改为 bing 0.0.0.0 或注释
+requirepass 123456 ### 添加 通过搜索password可得
+protected-mode no  ### 关闭保护模式(只有同一个服务器才能连接)
+
+从节点
+###修改/etc/redis.conf加入集群 
+replicaof &lt;masterip&gt; &lt;masterport&gt;
+slaveof &lt;masterip&gt; &lt;masterport&gt;
+###指定master
+replicaof redis-1 6379 
+slaveof redis-1 6379
+###master密码
+masterauth 123456
+protected-mode no
+
+###重启redis服务
+通过yum安装： 
+systemctl restart redis
+
+源码安装： 
+/etc/init.d/redis_6379 stop 
+/etc/init.d/redis_6379 start 
+
+###检测
+[root@redis-1 redis-7.0.5]# redis-cli 
+127.0.0.1:6379&gt; AUTH 123456 ###认证
+OK
+127.0.0.1:6379&gt; info replication ###查看信息
+# Replication
+role:master
+connected_slaves:2
+slave0:ip=192.168.1.20,port=6379,state=online,offset=294,lag=1
+slave1:ip=192.168.1.30,port=6379,state=online,offset=294,lag=1
+master_failover_state:no-failover
+master_replid:40b9e01fc3ef428ab7ab182b69d93f01ccfdfb87
+master_replid2:0000000000000000000000000000000000000000
+master_repl_offset:294
+second_repl_offset:-1
+repl_backlog_active:1
+repl_backlog_size:1048576
+repl_backlog_first_byte_offset:1
+repl_backlog_histlen:294
+127.0.0.1:6379&gt; 
+
+###开启哨兵模式
+yum: 
+/etc/redis-sentinel.conf
+源码安装: 
+在包里有模板文件sentinel.conf将其拷贝值/etc/下
+protected-mode no
+bind 0.0.0.0
+sentinel monitor mymaster 192.168.1.10 6379 2
+sentinel auth-pass mymaster 123456
+
+###在没有启动哨兵服务时，文件中没有myid可以复制给其他主机使用
+systemctl start redis-sentinel
+redis-sentinel /etc/sentinel.conf
+
+###查看
+[root@redis-1 etc]# redis-cli -p 26379
+127.0.0.1:26379&gt; info sentinel
+# Sentinel
+sentinel_masters:1
+sentinel_tilt:0
+sentinel_tilt_since_seconds:-1
+sentinel_running_scripts:0
+sentinel_scripts_queue_length:0
+sentinel_simulate_failure_flags:0
+master0:name=mymaster,status=ok,address=192.168.1.10:6379,slaves=2,sentinels=3
+</code></pre>
+<h1 id="Redis-服务调优-AOF"><a href="#Redis-服务调优-AOF" class="headerlink" title="Redis 服务调优-AOF"></a>Redis 服务调优-AOF</h1><p>使用上一题安装的 Redis 服务。在 Redis 中，AOF 配置为以三种不同的方式在磁盘上执 行 write 或者 fsync。假设当前 Redis 压力过大，请配置 Redis 不执行 fsync。除此之外，避免 AOF 文件过大，Redis 会进行 AOF 重写，生成缩小的 AOF 文件。请修改配置，让 AOF 重 写时，不进行 fsync 操作。</p>
+<pre><code class="shell"># 持久化技术：redis是运行在内存上的服务，一旦断电或重启，内存上的数据就会被删除，为了防止数据丢失，
+redis提供了一种安全策略--持久化
+
+# 持久化就是把redis产生的数据或操作进行快照保存到磁盘上
+
+分类：RDB 一段时间内全量保存数据 redis datebase
+      AOF 一段时间内增量保存数据 append only file 
+
+修改/etc/redis.conf文件
+```
+[root@controller ~]# vi /etc/redis.conf
+appendonly yes ###改为yes 开启AOF
+appendfsync no ###将原来的everysec修改为no,表示不执行fsync
+no-appendfsync-on-rewrite yes ###将原来的no改为yes,表示进行aof重写不执行fsync
+```
+</code></pre>
+<h1 id="Raid管理"><a href="#Raid管理" class="headerlink" title="Raid管理"></a>Raid管理</h1><p>在OpenStack私有云平台，创建一台云主机，并创建一个40G大小的cinder块存储，将块存储连接到云主机，然后在云主机上对云硬盘进行操作。要求分出4个大小为5G的分区，使用这4个分区，创建名为&#x2F;dev&#x2F;md5、raid级别为5的磁盘阵列加一个热备盘（使用最后一个分区作为热备盘）</p>
+<pre><code class="shell">[root@node ~]# yum install -y mdadm gdisk
+[root@node ~]# lsblk
+gdisk /dev/sdb
+Command (? for help): n
+Partition number (1-128, default 1):            ###默认，直接回车 
+First sector (34-2047, default = 34) or &#123;+-&#125;size&#123;KMGTP&#125;:      ###默认直接回车
+Last sector (34-2047, default = 2047) or &#123;+-&#125;size&#123;KMGTP&#125;: +10G ###&#123;单位KMGTP&#125;
+Hex code or GUID (L to show codes, Enter = 8300): fd00      ###不清楚L命令查看 raid代码 fd00
+wq 保存
+
+查看
+[root@node ~]# lsblk
+
+[root@node ~]# mdadm -C -v /dev/md5 -l 5 -n 4 /dev/sdb&#123;1,2,3,4&#125; -x 1 /dev/sdb5
+Continue creating array? y ###y确定
+/dev/md0 raid路径位置
+-v 显示创建过程
+-C 创建
+-c 块设备大小 默认64 一般64、256、512
+-l 指定raid类型
+-n &#123;指定raid个数&#125; &#123;具体盘符&#125;
+-x 备份盘个数(即热备盘)
+-a 通知mdadm是否创建设备文件 默认yes
+
+lsblk 查看
+mdadm -D /dev/md5 查看raid详情
+cat /proc/mdstat 系统磁盘阵列情况
+
+mdadm --stop dev/md5 停用raid
+</code></pre>
+<h1 id="ansible"><a href="#ansible" class="headerlink" title="ansible"></a>ansible</h1><h2 id="常用模块使用方法"><a href="#常用模块使用方法" class="headerlink" title="常用模块使用方法"></a>常用模块使用方法</h2><pre><code class="shell">###查找模块使用方法ansible-doc 模块名
+
+默认为command模块 不能交互不能使用一些符号
+shell模块
+  可以使用一些符号|&gt; 
+
+script模块
+  应为不能交互，可使用此模块将本地编写的脚本导入目标主机执行执行完后删除
+    ansible all -m script -a &quot;./install.sh&quot; 
+
+file模块
+  可以创建删除文件，目录，连接，修改权限
+  创建文件
+    ansible all -m file -a &quot;path=/root/txt state=touch&quot;
+  创建目录
+    ansible all -m file -a &quot;path=/root/dir state=directory&quot;
+  修改属主属组权限
+    ansible all -m file -a &quot;path=/root/txt owner=sshd group=sshd mode=0777&quot;
+  删除
+    ansible all -m file -a &quot;path=/root/txt state=absent&quot;
+  创建连接
+    ansible all -m file -a &quot;src=/etc/hosts path=/tmp/hosts.txt state=link&quot;
+
+copy模块
+  将本地文件或目录复制到目标主机指定目录下
+    ansible all -m -a &quot;src=/root/.ssh/id_rsa dest=/root/.ssh/&quot;
+  同通过content直接定义文件内容 \n 回车
+    ansible all -m copy -a &quot;content=&#39;hello world\n dest=~/&#39;&quot;
+
+fetch模块
+  将目标主机指定目录复制到本地
+    ansible all -m fetch -m &quot;src=/etc/hosts dest=~/&quot;
+
+lineinfile模块
+  修改目标主机指定文件单行内容默认在最后一行添加
+    ansible all -m lineinfile -a &quot;path=hosts line=&#39;192.168.XX&#39;&quot; 
+
+replace模块
+  可更换文件中指定内容
+    ansible all -m replace -a &quot;path=/etc/hosts regxep=master replace=node&quot;
+
+user模块
+  创建删除修改用户
+    ansible all -m user -a &quot;name=wsq password=&#123;&#123;'000000'|password_hash('sha512')&#125;&#125;&quot;
+    ansible all -m user - a &quot;name=wsq state=absent remove=true&quot;
+
+yum_repository模块
+  创建修改yum源配置文件
+    ansible all -m yum_repository -a &quot;name=centos baseurl=http://192.XXXX 
+    gpgcheck=no descripton=hello&quot;
+    [centos]
+    name=hello
+    baseurl=http://
+    gpgcheck=0 
+
+yum模块
+  安装卸载升级软件包
+    ansible all -m yum -a &quot;name=vsftpd state=present&quot;
+    ansible all -m yum -a &quot;name=vsftpd state=latest&quot;
+    ansible all -m yum -a &quot;name=vsftpd state=absent&quot; 
+
+service模块
+  启动关闭重启服务
+    ansible all -m service -a &quot;name=httpd state=started&quot;
+    ansible all -m service -a &quot;name=httpd state=stoped&quot;
+    ansible all -m service -a &quot;name=httpd state=restarted&quot;
+    ansible all -m service -a &quot;name=httpd enabled=yes&quot;
+
+sudo提权
+  echo &quot;wsq ALL=(ALL) NOPASSWD:ALL&quot; &gt;&gt; /etc/sudoers
+</code></pre>
+</div><div class="article_tags"><span> <i class="yufont icon-tag"></i> 标签: </span><a href="/tags/openstack-%E4%BA%91%E8%AE%A1%E7%AE%97/">openstack 云计算</a></div></article><div class="article-copyright"><p>标题: <a href="/2023/03/11/open%20stack%20%E8%BF%90%E7%BB%B4/">openstack运维</a></p><p> 链接: <a href="/2023/03/11/open%20stack%20%E8%BF%90%E7%BB%B4/">https://zhiyong0389.github.io/2023/03/11/open%20stack%20%E8%BF%90%E7%BB%B4/</a></p><p> 版权声明: 若无特殊标注皆为 智勇 原创版权, 转载请以链接形式注明作者及原始出处</p><p>最后编辑时间: 2023-03-12</p></div><div class="page_turning"><a class="page_up" href="/2023/03/11/open%20stack%E6%90%AD%E5%BB%BA/"
+  style="background-image:url(/assets/images/random/20.jpg)">
+  <div class="inner"><span>上一篇:</span>
+    <p>openstack搭建教程</p>
+  </div>
+</a>
+<a class="page_down" href="/2023/03/11/mysql-forget-password/"
+style="background-image:url(http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022143107277-1604940989.png)">
+<div class="inner"><span>下一篇:</span>
+  <p>mysql在忘记密码的情况下重置密码</p>
+</div>
+</a>
+</div></div></div><div class="article_sidebar left"><div class="author_sidebar sidebar_container"><div class="author_info"><div class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/></div><div class="author_name"><h3><a href="/about">智勇</a></h3><p>不断学习，不断提升！</p></div></div><div class="author_data"><ul><li> <div> <span>34</span><p>文章</p></div></li><li> <div> <span>0</span><p>分类</p></div></li><li> <div> <span>15</span><p>标签</p></div></li></ul></div></div><div class="catalogue sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-feiji"></i>目录</h3><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Linux-%E7%B3%BB%E7%BB%9F%E8%B0%83%E4%BC%98"><span class="toc-number">1.</span> <span class="toc-text">Linux 系统调优</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9%E8%84%8F%E6%95%B0%E6%8D%AE%E5%8F%AF%E7%94%A8%E5%86%85%E5%AD%98%E7%99%BE%E5%88%86%E6%AF%94%E4%B8%BA60%EF%BC%8C%E9%BB%98%E8%AE%A4%E4%B8%BA30"><span class="toc-number">1.1.</span> <span class="toc-text">修改脏数据可用内存百分比为60，默认为30</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9%E6%96%87%E4%BB%B6%E5%8F%A5%E6%9F%84%E6%95%B0"><span class="toc-number">1.2.</span> <span class="toc-text">修改文件句柄数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%98%B2%E6%AD%A2-SYN-%E6%94%BB%E5%87%BB"><span class="toc-number">1.3.</span> <span class="toc-text">防止 SYN 攻击</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E7%BD%AEcontroller%E8%8A%82%E7%82%B9%E7%A6%81%E6%AD%A2%E5%85%B6%E4%BB%96%E8%8A%82%E7%82%B9%E5%8F%AF%E4%BB%A5Ping%E5%AE%83"><span class="toc-number">1.4.</span> <span class="toc-text">配置controller节点禁止其他节点可以Ping它</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%85%E6%A0%B8%E4%BC%98%E5%8C%96"><span class="toc-number">1.5.</span> <span class="toc-text">内核优化</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E5%BA%93%E8%B0%83%E4%BC%98"><span class="toc-number">2.</span> <span class="toc-text">数据库调优</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%86memcache%E7%BC%93%E5%AD%98%E4%BF%AE%E6%94%B9%E4%B8%BA128"><span class="toc-number">2.1.</span> <span class="toc-text">将memcache缓存修改为128</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9-x2F-etc-x2F-my-cnf-%E6%96%87%E4%BB%B6%EF%BC%8C%E5%AE%8C%E6%88%90%E4%B8%8B%E5%88%97%E8%A6%81%E6%B1%82%EF%BC%9A"><span class="toc-number">2.2.</span> <span class="toc-text">修改&#x2F;etc&#x2F;my.cnf 文件，完成下列要求：</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Keystone-%E6%9C%8D%E5%8A%A1"><span class="toc-number">3.</span> <span class="toc-text">Keystone 服务</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AAtom%E7%94%A8%E6%88%B7-%E5%AF%86%E7%A0%81%E4%B8%BA000000-email%E4%B8%BA-x61-x64-x6d-105-110-x40-49-x32-51-x2e-99-111-x6d"><span class="toc-number">3.1.</span> <span class="toc-text">创建一个tom用户 密码为000000 email为admin@123.com</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%97%E5%87%BA%E4%B8%80%E4%B8%AAtoken"><span class="toc-number">3.2.</span> <span class="toc-text">列出一个token</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%A1%B9%E7%9B%AE%E7%AE%A1%E7%90%86"><span class="toc-number">3.3.</span> <span class="toc-text">项目管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%94%A8%E6%88%B7%E7%AE%A1%E7%90%86"><span class="toc-number">3.4.</span> <span class="toc-text">用户管理</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#glance%E9%95%9C%E5%83%8F%E6%9C%8D%E5%8A%A1"><span class="toc-number">4.</span> <span class="toc-text">glance镜像服务</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%86%E6%8F%90%E4%BE%9B-%E7%9A%84-cirros-0-3-4-x86-64-disk-img-%E9%95%9C%E5%83%8F%EF%BC%88%E8%AF%A5%E9%95%9C%E5%83%8F%E5%9C%A8-HTTP-%E6%9C%8D%E5%8A%A1%E4%B8%AD%EF%BC%8C%E5%8F%AF%E8%87%AA%E8%A1%8C%E4%B8%8B%E8%BD%BD%EF%BC%89%E4%B8%8A%E4%BC%A0%E8%87%B3%E5%B9%B3%E5%8F%B0%EF%BC%8C-%E5%91%BD%E5%90%8D%E4%B8%BA-cirros%EF%BC%8C%E5%B9%B6%E8%AE%BE%E7%BD%AE%E6%9C%80%E5%B0%8F%E5%90%AF%E5%8A%A8%E9%9C%80%E8%A6%81%E7%9A%84%E7%A1%AC%E7%9B%98%E4%B8%BA-10G%EF%BC%8C%E6%9C%80%E5%B0%8F%E5%90%AF%E5%8A%A8%E9%9C%80%E8%A6%81%E7%9A%84%E5%86%85%E5%AD%98%E4%B8%BA-1G%E3%80%82"><span class="toc-number">4.1.</span> <span class="toc-text">将提供 的 cirros-0.3.4-x86_64-disk.img 镜像（该镜像在 HTTP 服务中，可自行下载）上传至平台， 命名为 cirros，并设置最小启动需要的硬盘为 10G，最小启动需要的内存为 1G。</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#OpenStack-%E5%BC%80%E6%94%BE%E9%95%9C%E5%83%8F%E6%9D%83%E9%99%90"><span class="toc-number">4.2.</span> <span class="toc-text">OpenStack 开放镜像权限</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%90%8E%E7%AB%AF%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E7%AE%A1%E7%90%86"><span class="toc-number">4.3.</span> <span class="toc-text">后端配置文件管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%90%8E%E7%AB%AF%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E7%AE%A1%E7%90%86-1"><span class="toc-number">4.4.</span> <span class="toc-text">后端配置文件管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#OpenStack-Glance-%E9%95%9C%E5%83%8F%E7%AE%A1%E7%90%86"><span class="toc-number">4.5.</span> <span class="toc-text">OpenStack Glance 镜像管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%94%B9-glance-%E5%AD%98%E5%82%A8%E5%90%8E%E7%AB%AF"><span class="toc-number">4.6.</span> <span class="toc-text">改 glance 存储后端</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#glance%E5%AF%B9%E6%8E%A5cinder"><span class="toc-number">4.7.</span> <span class="toc-text">glance对接cinder</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%86swift%E5%AD%98%E5%82%A8%E4%BD%9C%E4%B8%BA%E9%95%9C%E5%83%8F%E6%9C%8D%E5%8A%A1%E7%9A%84%E5%90%8E%E7%AB%AF%E5%AD%98%E5%82%A8"><span class="toc-number">4.8.</span> <span class="toc-text">将swift存储作为镜像服务的后端存储</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#nova%E8%AE%A1%E7%AE%97%E6%9C%8D%E5%8A%A1"><span class="toc-number">5.</span> <span class="toc-text">nova计算服务</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8nova%E5%91%BD%E4%BB%A4%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E5%90%8D%E4%B8%BAt%EF%BC%8Cid%E4%B8%BA5%EF%BC%8C%E5%86%85%E5%AD%98%E4%B8%BA2048M%EF%BC%8C%E7%A3%81%E7%9B%98%E5%AE%B9%E9%87%8F%E4%B8%BA10GB%EF%BC%8CvCPU%E6%95%B0%E9%87%8F%E4%B8%BA2%E7%9A%84%E4%BA%91%E4%B8%BB%E6%9C%BA%E7%B1%BB%E5%9E%8B%E3%80%82"><span class="toc-number">5.1.</span> <span class="toc-text">使用nova命令创建一个名为t，id为5，内存为2048M，磁盘容量为10GB，vCPU数量为2的云主机类型。</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9-nova-%E7%9B%B8%E5%85%B3%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%EF%BC%8C%E8%A7%A3%E5%86%B3%E5%9B%A0%E7%AD%89%E5%BE%85%E6%97%B6%E9%97%B4%E8%BF%87%E9%95%BF%E8%80%8C%E5%AF%BC%E8%87%B4%E8%99%9A%E6%8B%9F%E6%9C%BA%E5%90%AF%E5%8A%A8%E8%B6%85%E6%97%B6%E4%BB%8E%E8%80%8C%E8%8E%B7%E5%8F%96%E4%B8%8D-%E5%88%B0-IP-%E5%9C%B0%E5%9D%80%E8%80%8C%E6%8A%A5%E9%94%99%E5%A4%B1%E8%B4%A5%E7%9A%84%E9%97%AE%E9%A2%98%E3%80%82"><span class="toc-number">5.2.</span> <span class="toc-text">修改 nova 相关配置文件，解决因等待时间过长而导致虚拟机启动超时从而获取不 到 IP 地址而报错失败的问题。</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#OpenStack-Nova-%E6%B8%85%E9%99%A4%E7%BC%93%E5%AD%98"><span class="toc-number">5.3.</span> <span class="toc-text">OpenStack Nova 清除缓存</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A8%E6%80%81%E8%B0%83%E6%95%B4%E4%BA%91%E4%B8%BB%E6%9C%BA%E7%B1%BB%E5%9E%8B"><span class="toc-number">5.4.</span> <span class="toc-text">动态调整云主机类型</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%91%E4%B8%BB%E6%9C%BA%E4%BF%9D%E5%AD%98%E5%BF%AB%E7%85%A7"><span class="toc-number">5.5.</span> <span class="toc-text">云主机保存快照</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9%E4%BA%91%E4%B8%BB%E6%9C%BA%E5%86%85%E5%AD%98"><span class="toc-number">5.6.</span> <span class="toc-text">修改云主机内存</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%B7%E8%BF%81%E7%A7%BB"><span class="toc-number">5.7.</span> <span class="toc-text">冷迁移</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#neutron%E7%BD%91%E7%BB%9C%E6%9C%8D%E5%8A%A1"><span class="toc-number">6.</span> <span class="toc-text">neutron网络服务</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E5%A4%96%E9%83%A8%E7%BD%91%E7%BB%9Cext-net%E5%92%8C%E5%AD%90%E7%BD%91ext-subnet-%E5%88%9B%E5%BB%BA%E5%86%85%E7%BD%91int-net%E5%92%8C%E5%AD%90%E7%BD%91int-subnet%EF%BC%8C%E5%88%9B%E5%BB%BA%E8%B7%AF%E7%94%B1router-1%EF%BC%88%E5%B9%B6%E8%BF%9E%E9%80%9A%E5%86%85%E5%A4%96%E7%BD%91%EF%BC%89"><span class="toc-number">6.1.</span> <span class="toc-text">创建外部网络ext-net和子网ext-subnet 创建内网int-net和子网int-subnet，创建路由router-1（并连通内外网）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E5%85%A8%E7%BB%84%E7%AE%A1%E7%90%86"><span class="toc-number">6.2.</span> <span class="toc-text">安全组管理</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#dashboard%E6%9C%8D%E5%8A%A1"><span class="toc-number">7.</span> <span class="toc-text">dashboard服务</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9nova%E9%85%8D%E7%BD%AE%E6%96%87%E4%BB%B6%E4%BD%BF%E4%B9%8B%E8%83%BD%E9%80%9A%E8%BF%87%E5%85%AC%E7%BD%91IP%E8%8C%83%E6%96%87dashboard%E9%A6%96%E9%A1%B5"><span class="toc-number">7.1.</span> <span class="toc-text">修改nova配置文件使之能通过公网IP范文dashboard首页</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%86-Dashboard-%E4%B8%AD%E7%9A%84-Django-%E6%95%B0%E6%8D%AE%E4%BF%AE%E6%94%B9%E4%B8%BA%E5%AD%98%E5%82%A8%E5%9C%A8%E6%96%87%E4%BB%B6%E4%B8%AD"><span class="toc-number">7.2.</span> <span class="toc-text">将 Dashboard 中的 Django 数据修改为存储在文件中</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%B7%E4%BD%BF%E7%94%A8-curl-%E6%8C%87%E4%BB%A4%E8%8E%B7%E5%8F%96-dashboard-%E9%A6%96%E9%A1%B5%E4%BF%A1%E6%81%AF"><span class="toc-number">7.3.</span> <span class="toc-text">请使用 curl 指令获取 dashboard 首页信息</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%91%E5%B9%B3%E5%8F%B0%E5%AE%89%E5%85%A8%E7%AD%96%E7%95%A5%E6%8F%90%E5%8D%87"><span class="toc-number">7.4.</span> <span class="toc-text">云平台安全策略提升</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#swift%E6%9C%8D%E5%8A%A1"><span class="toc-number">8.</span> <span class="toc-text">swift服务</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E5%91%BD%E4%BB%A4%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E5%90%8D%E5%8F%AB-examcontainer-%E7%9A%84%E5%AE%B9%E5%99%A8%EF%BC%8C%E5%B0%86-cirros-0-3-4-x86-64-disk-img-%E9%95%9C%E5%83%8F%E4%B8%8A%E4%BC%A0%E5%88%B0-examcontainer-%E5%AE%B9%E5%99%A8%E4%B8%AD%EF%BC%8C%E5%B9%B6-%E8%AE%BE%E7%BD%AE%E5%88%86%E6%AE%B5%E5%AD%98%E6%94%BE%EF%BC%8C%E6%AF%8F%E4%B8%80%E6%AE%B5%E5%A4%A7%E5%B0%8F%E4%B8%BA-10M%E3%80%82"><span class="toc-number">8.1.</span> <span class="toc-text">使用命令创建一个名叫 examcontainer 的容器，将 cirros-0.3.4-x86_64-disk.img 镜像上传到 examcontainer 容器中，并 设置分段存放，每一段大小为 10M。</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#cinder%E6%9C%8D%E5%8A%A1"><span class="toc-number">9.</span> <span class="toc-text">cinder服务</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%B7%E5%9C%A8%E8%AE%A1%E7%AE%97%E8%8A%82%E7%82%B9%EF%BC%8C%E5%AF%B9%E5%9D%97%E5%AD%98%E5%82%A8%E8%BF%9B%E8%A1%8C%E6%89%A9%E5%AE%B9%E6%93%8D%E4%BD%9C%EF%BC%8C-%E5%8D%B3%E5%9C%A8%E8%AE%A1%E7%AE%97%E8%8A%82%E7%82%B9%E5%86%8D%E5%88%86%E5%87%BA%E4%B8%80%E4%B8%AA-5G-%E7%9A%84%E5%88%86%E5%8C%BA%EF%BC%8C%E5%8A%A0%E5%85%A5%E5%88%B0-cinder-%E5%9D%97%E5%AD%98%E5%82%A8%E7%9A%84%E5%90%8E%E7%AB%AF%E5%AD%98%E5%82%A8%E4%B8%AD%E5%8E%BB%E3%80%82"><span class="toc-number">9.1.</span> <span class="toc-text">请在计算节点，对块存储进行扩容操作， 即在计算节点再分出一个 5G 的分区，加入到 cinder 块存储的后端存储中去。</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E5%90%8D%E4%B8%BAlvm%E7%9A%84%E5%8D%B7%E7%B1%BB%E5%9E%8B%EF%BC%8C%E5%88%9B%E5%BB%BA%E8%AF%A5%E7%B1%BB%E5%9E%8B%E8%A7%84%E6%A0%BC%E9%94%AE%E5%80%BC%E5%AF%B9%EF%BC%8C%E8%A6%81%E6%B1%82lvm%E5%8D%B7%E7%B1%BB%E5%9E%8B%E5%AF%B9%E5%BA%94cinder%E5%90%8E%E7%AB%AF%E9%A9%B1%E5%8A%A8lvm%E6%89%80%E7%AE%A1%E7%90%86%E7%9A%84%E5%AD%98%E5%82%A8%E8%B5%84%E6%BA%90%EF%BC%8C%E5%90%8D%E5%AD%97lvm-test%EF%BC%8C%E5%A4%A7%E5%B0%8F1G%E7%9A%84%E4%BA%91%E7%A1%AC%E7%9B%98%E5%B9%B6%E6%9F%A5%E8%AF%A2%E8%AF%A5%E4%BA%91%E7%A1%AC%E7%9B%98%E7%9A%84%E8%AF%A6%E7%BB%86%E4%BF%A1%E6%81%AF-%E5%B9%B6%E9%99%84%E5%8A%A0%E5%88%B0%E4%BA%91%E4%B8%BB%E6%9C%BA%E4%B8%8A"><span class="toc-number">9.2.</span> <span class="toc-text">创建名为lvm的卷类型，创建该类型规格键值对，要求lvm卷类型对应cinder后端驱动lvm所管理的存储资源，名字lvm_test，大小1G的云硬盘并查询该云硬盘的详细信息 并附加到云主机上</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Manila-%E6%9C%8D%E5%8A%A1"><span class="toc-number">10.</span> <span class="toc-text">Manila 服务</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA-default-share-type-%E5%85%B1%E4%BA%AB%E7%B1%BB%E5%9E%8B%EF%BC%88%E4%B8%8D%E4%BD%BF%E7%94%A8%E9%A9%B1%E5%8A%A8%E7%A8%8B%E5%BA%8F%E6%94%AF%E6%8C%81%EF%BC%89%EF%BC%8C%E6%8E%A5%E7%9D%80%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E5%A4%A7%E5%B0%8F%E4%B8%BA-2G-%E7%9A%84%E5%85%B1%E4%BA%AB%E5%AD%98%E5%82%A8%E5%90%8D%E4%B8%BA-share01-%E5%B9%B6%E5%BC%80%E6%94%BE-share01-%E7%9B%AE%E5%BD%95%E5%AF%B9-OpenStack-%E7%AE%A1%E7%90%86%E7%BD%91%E6%AE%B5%E4%BD%BF%E7%94%A8%E6%9D%83%E9%99%90%E3%80%82"><span class="toc-number">10.1.</span> <span class="toc-text">创建 default_share_type 共享类型（不使用驱动程序支持），接着创建一个大小为 2G 的共享存储名为 share01 并开放 share01 目录对 OpenStack 管理网段使用权限。</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Barbican-%E6%9C%8D%E5%8A%A1"><span class="toc-number">11.</span> <span class="toc-text">Barbican 服务</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8-openstack-%E5%91%BD%E4%BB%A4%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E5%90%8D%E4%B8%BA-secret01-%E7%9A%84%E5%AF%86%E9%92%A5"><span class="toc-number">11.1.</span> <span class="toc-text">使用 openstack 命令创建一个名为 secret01 的密钥</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Cloudkitty-%E6%9C%8D%E5%8A%A1"><span class="toc-number">12.</span> <span class="toc-text">Cloudkitty 服务</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%90%AF%E7%94%A8-hashmap-%E8%AF%84%E7%BA%A7-%E6%A8%A1%E5%9D%97%EF%BC%8C%E6%8E%A5%E7%9D%80%E5%88%9B%E5%BB%BA-volume-thresholds-%E7%BB%84%EF%BC%8C%E5%88%9B%E5%BB%BA%E6%9C%8D%E5%8A%A1%E5%8C%B9%E9%85%8D%E8%A7%84%E5%88%99-volume-size%EF%BC%8C%E5%B9%B6%E8%AE%BE%E7%BD%AE%E6%AF%8F-GB-%E7%9A%84%E4%BB%B7-%E6%A0%BC%E4%B8%BA-0-01%E3%80%82%E6%8E%A5%E4%B8%8B%E6%9D%A5%E5%AF%B9%E5%BA%94%E5%A4%A7%E9%87%8F%E6%95%B0%E6%8D%AE%E8%AE%BE%E7%BD%AE%E5%BA%94%E7%94%A8%E6%8A%98%E6%89%A3%EF%BC%8C%E5%9C%A8%E7%BB%84-volume-thresholds-%E4%B8%AD%E5%88%9B%E5%BB%BA%E9%98%88%E5%80%BC%EF%BC%8C%E8%AE%BE%E7%BD%AE-%E8%8B%A5%E8%B6%85%E8%BF%87-50GB-%E7%9A%84%E9%98%88%E5%80%BC%EF%BC%8C%E5%BA%94%E7%94%A8-2-%E7%9A%84%E6%8A%98%E6%89%A3%EF%BC%880-98%EF%BC%89%E3%80%82"><span class="toc-number">12.1.</span> <span class="toc-text">启用 hashmap 评级 模块，接着创建 volume_thresholds 组，创建服务匹配规则 volume.size，并设置每 GB 的价 格为 0.01。接下来对应大量数据设置应用折扣，在组 volume_thresholds 中创建阈值，设置 若超过 50GB 的阈值，应用 2%的折扣（0.98）。</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#OpenStack-%E5%B9%B3%E5%8F%B0%E5%86%85%E5%AD%98%E4%BC%98%E5%8C%96"><span class="toc-number">13.</span> <span class="toc-text">OpenStack 平台内存优化</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%90%AD%E5%BB%BA%E5%AE%8C-OpenStack-%E5%B9%B3%E5%8F%B0%E5%90%8E%EF%BC%8C%E5%85%B3%E9%97%AD%E7%B3%BB%E7%BB%9F%E7%9A%84%E5%86%85%E5%AD%98%E5%85%B1%E4%BA%AB%EF%BC%8C%E6%89%93%E5%BC%80%E9%80%8F%E6%98%8E%E5%A4%A7%E9%A1%B5%E3%80%82"><span class="toc-number">13.1.</span> <span class="toc-text">搭建完 OpenStack 平台后，关闭系统的内存共享，打开透明大页。</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#OpenStack-%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97%E8%B0%83%E4%BC%98"><span class="toc-number">13.2.</span> <span class="toc-text">OpenStack 消息队列调优</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#kvm%E8%B0%83%E4%BC%98"><span class="toc-number">13.3.</span> <span class="toc-text">kvm调优</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#OpenStack-Heat-%E8%BF%90%E7%BB%B4"><span class="toc-number">14.</span> <span class="toc-text">OpenStack Heat 运维</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BAcontainer%EF%BC%88%E5%AE%B9%E5%99%A8%EF%BC%89"><span class="toc-number">14.1.</span> <span class="toc-text">创建container（容器）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BAflavor%EF%BC%88%E4%BA%91%E4%B8%BB%E6%9C%BA%E7%B1%BB%E5%9E%8B%EF%BC%89"><span class="toc-number">14.2.</span> <span class="toc-text">创建flavor（云主机类型）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BAnet%EF%BC%88%E7%BD%91%E7%BB%9C%EF%BC%89"><span class="toc-number">14.3.</span> <span class="toc-text">创建net（网络）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BAuser%EF%BC%88%E7%94%A8%E6%88%B7%EF%BC%89"><span class="toc-number">14.4.</span> <span class="toc-text">创建user（用户）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BAimage%EF%BC%88%E9%95%9C%E5%83%8F%EF%BC%89"><span class="toc-number">14.5.</span> <span class="toc-text">创建image（镜像）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BAserver%EF%BC%88%E4%BA%91%E4%B8%BB%E6%9C%BA%EF%BC%89"><span class="toc-number">14.6.</span> <span class="toc-text">创建server（云主机）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BAcinder%EF%BC%88%E5%8D%B7%EF%BC%89"><span class="toc-number">14.7.</span> <span class="toc-text">创建cinder（卷）</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#python%E7%A8%8B%E5%BA%8F%E5%AF%B9%E6%8E%A5openstack-api"><span class="toc-number">15.</span> <span class="toc-text">python程序对接openstack api</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85python3"><span class="toc-number">15.1.</span> <span class="toc-text">安装python3</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BAflavor%EF%BC%88%E4%BA%91%E4%B8%BB%E6%9C%BA%E7%B1%BB%E5%9E%8B%EF%BC%89-1"><span class="toc-number">15.2.</span> <span class="toc-text">创建flavor（云主机类型）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BAserver%EF%BC%88%E4%BA%91%E4%B8%BB%E6%9C%BA%EF%BC%89-1"><span class="toc-number">15.3.</span> <span class="toc-text">创建server（云主机）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BAuser%EF%BC%88%E7%94%A8%E6%88%B7%EF%BC%89-1"><span class="toc-number">15.4.</span> <span class="toc-text">创建user（用户）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BAproject%EF%BC%88%E9%A1%B9%E7%9B%AE%EF%BC%89"><span class="toc-number">15.5.</span> <span class="toc-text">创建project（项目）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BAvolume%EF%BC%88%E5%8D%B7%EF%BC%89"><span class="toc-number">15.6.</span> <span class="toc-text">创建volume（卷）</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Redis-%E4%B8%80%E4%B8%BB%E4%BA%8C%E4%BB%8E%E4%B8%89%E5%93%A8%E5%85%B5%E6%A8%A1%E5%BC%8F"><span class="toc-number">16.</span> <span class="toc-text">Redis 一主二从三哨兵模式</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Redis-%E6%9C%8D%E5%8A%A1%E8%B0%83%E4%BC%98-AOF"><span class="toc-number">17.</span> <span class="toc-text">Redis 服务调优-AOF</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Raid%E7%AE%A1%E7%90%86"><span class="toc-number">18.</span> <span class="toc-text">Raid管理</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#ansible"><span class="toc-number">19.</span> <span class="toc-text">ansible</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E7%94%A8%E6%A8%A1%E5%9D%97%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95"><span class="toc-number">19.1.</span> <span class="toc-text">常用模块使用方法</span></a></li></ol></li></ol></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-24gl-folderOpen"></i>分类</h3><div class="archive_lists"><ul class="category-list"></ul></div></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-tag"></i>标签</h3><a href="/tags/Kubernetes/" style="font-size: 18.67px;">Kubernetes</a> <a href="/tags/ServiceMesh/" style="font-size: 16px;">ServiceMesh</a> <a href="/tags/helm-kubernetes/" style="font-size: 16px;">helm kubernetes</a> <a href="/tags/helm-k8s/" style="font-size: 17.33px;">helm,k8s</a> <a href="/tags/hexo-github%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" style="font-size: 20px;">hexo+github搭建博客</a> <a href="/tags/kubernetes/" style="font-size: 17.33px;">kubernetes</a> <a href="/tags/linux/" style="font-size: 17.33px;">linux</a> <a href="/tags/mycat-linux/" style="font-size: 16px;">mycat linux</a> <a href="/tags/mysql/" style="font-size: 16px;">mysql</a> <a href="/tags/openstack/" style="font-size: 17.33px;">openstack</a> <a href="/tags/openstack-%E4%BA%91%E8%AE%A1%E7%AE%97/" style="font-size: 17.33px;">openstack 云计算</a> <a href="/tags/springcloud-java/" style="font-size: 16px;">springcloud java</a> <a href="/tags/springcloud-java-%E5%BE%AE%E6%9C%8D%E5%8A%A1/" style="font-size: 16px;">springcloud java 微服务</a> <a href="/tags/zookeeper-Hadoop/" style="font-size: 16px;">zookeeper Hadoop</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93-mysql/" style="font-size: 16px;">数据库 mysql</a></div></div></div><footer class="footer"> <div class="footer_bottom"><div class="footer_box"><div class="copy"><span>主题</span><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn">Hexo</a><span>模板</span><a href="/">智勇</a></div><div class="copy"><span>© 2023<a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/#/Integrated/index">豫ICP备2023014079号-1</a></span></div></div></div></footer><html><head></head><body><span id="span"></span><script type="text/javascript">function runtime(){
+        // 初始时间，日/月/年 时:分:秒
+        X = new Date("01/01/2023 8:32:00");
+        Y = new Date();
+        T = (Y.getTime()-X.getTime());
+        M = 24*60*60*1000;
+        a = T/M;
+        A = Math.floor(a);
+        b = (a-A)*24;
+        B = Math.floor(b);
+        c = (b-B)*60;
+        C = Math.floor((b-B)*60);
+        D = Math.floor((c-C)*60);
+        //信息写入到DIV中
+        span.innerHTML = "本站勉强运行: "+A+"天"+B+"小时"+C+"分"+D+"秒"
+    }
+    setInterval(runtime, 1000);
+</script></body></html><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"> </script><script src="/assets/lib/prettify/prettify.js"> </script><script src="/assets/lib/fancybox/fancybox.js"> </script><script src="/assets/js/app.js"> </script></div></body></html>

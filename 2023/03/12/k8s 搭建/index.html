@@ -1,0 +1,285 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="shortcut icon" href="/assets/imgs/favicon.ico" type="image/x-icon"><title>智勇 | 智勇</title><meta name="keywords" content="云计算 云原生 私有云 容器云"><meta name="keywords" content="记录个人学习生活"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_3435803_wadmwlqwhps.css"><link rel="stylesheet" href="/style/index.css"><link rel="stylesheet" href="/assets/lib/prettify/prettify.css"><link rel="stylesheet" href="/assets/lib/fancybox/fancybox.css"><meta name="generator" content="Hexo 6.3.0"></head><body><div id="app"><header class="header yu13_p_30" id="header"><div class="header_left"><h1 class="yu13_logo"><a id="logo" href="/">智勇</a></h1></div><div class="header_right"><div class="header_search yu13_cursor yu13_hover" id="search"><i class="yufont icon-sousuo"></i></div><div class="line yu13_p_10"></div><nav class="header_nav"><ul class="nav"><li class="menu_nav"><a href="/"><i class="fas"></i><span> 首页</span></a></li><li class="menu_nav"><a href="/archives"><i class="fas"></i><span> 归档</span></a></li><li class="menu_nav"><a href="/categorys"><i class="fas"></i><span> 分类</span></a></li><li class="menu_nav"><a href="/tags"><i class="fas"></i><span> 标签</span></a></li><li class="menu_nav"><a href="/links"><i class="fas"></i><span> 友情链接</span></a></li></ul></nav></div></header><div class="article_topbg" style="background-image: url('/assets/imgs/top_bg.jpg')"><div class="topbg_container"><h1 class="title"></h1><div class="info"><div class="article_meta"><div class="left"><span class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/><a href="/about">智勇</a></span><span><i class="yufont icon-yingyong"></i><span>暂无分类</span></span><span><i class="yufont icon-rili"></i>2023-3-12</span></div></div></div></div></div><div class="container log_container clearfix"><div class="article_content left"> <div class="article_main"><article class="content"><div class="content_text article_text"> <h1 id="修改主机名，关闭swap，并配置hosts映射"><a href="#修改主机名，关闭swap，并配置hosts映射" class="headerlink" title="修改主机名，关闭swap，并配置hosts映射"></a>修改主机名，关闭swap，并配置hosts映射</h1><pre><code class="shell">[root@master ~]# hostnamectl set-hostname master/node
+[root@master ~]# swapoff -a
+
+#删除/etc/fstab中swap
+</code></pre>
+<h1 id="Yum源数据的持久化挂载"><a href="#Yum源数据的持久化挂载" class="headerlink" title="Yum源数据的持久化挂载"></a>Yum源数据的持久化挂载</h1><pre><code class="shell">[root@master ~]# vi /etc/fstab
+/root/bricsskills_cloud paas.iso /opt/paas iso9660 defaults
+0 0
+/root/CeniOS-7-x86 64-DVD-1804.iso /opt/centos iso9660 defaults 0 0
+[root@master ~]# mount -a
+</code></pre>
+<h2 id="Yum-源的编写"><a href="#Yum-源的编写" class="headerlink" title="Yum 源的编写"></a>Yum 源的编写</h2><pre><code class="shell">[root@master ~]# mv/etc/yum.repos.d/CentOS-* /home
+[root@master ~]# vi/etc/yum.repos.d/local.repo
+[k8s]
+name=k8s
+baseurl-file:///opt/paas/kubernetes-repo
+gpgcheck-0
+enabled=1
+[centos]
+name=centos
+baseurl=file:///opt/centos
+gpgcheck=0
+enabled-1
+</code></pre>
+<h2 id="在master节点安装ftp服务，将ftp共享目录设置为-x2F-opt-x2F-。"><a href="#在master节点安装ftp服务，将ftp共享目录设置为-x2F-opt-x2F-。" class="headerlink" title="在master节点安装ftp服务，将ftp共享目录设置为 &#x2F;opt&#x2F;。"></a>在master节点安装ftp服务，将ftp共享目录设置为 &#x2F;opt&#x2F;。</h2><pre><code class="shell">[root@master ~]# yam install y ysftpd
+[root@master ~]# echo &quot;anon_root=/opt&quot; &gt;&gt; /etc/vsftpd/vsftpd.conf
+[root@master ~]# systemetl start vsftpd &amp;&amp; systemcil enable vsftpd
+</code></pre>
+<h2 id="node节点yum源编写"><a href="#node节点yum源编写" class="headerlink" title="node节点yum源编写"></a>node节点yum源编写</h2><pre><code class="shell">[root@node ~]# mv /ete/yum.repos.d/* /home
+[root@node ~]# vim /etc/yum.repos.d/ftp.repo
+[k8s]
+name=k8s
+baseurl=ftp://master/paas/kubernetes-repo
+gpgcheck=0
+enabled=1
+[centos]
+name=centos
+baseurl=ftp://master/centos
+gpgcheck=0
+enabled=1
+</code></pre>
+<h1 id="设置时间同步服务器"><a href="#设置时间同步服务器" class="headerlink" title="设置时间同步服务器"></a>设置时间同步服务器</h1><h2 id="master节点"><a href="#master节点" class="headerlink" title="master节点"></a>master节点</h2><pre><code class="shell">[root@master ~]# yum install -y chrony
+[root@master ~]# vim /etc/chrony.conf
+server 192.168.100.15 iburst           ###masterIP
+allow 192.168.100.0/24
+local stratum 10
+[root@master ~]# systemctl start chronyd
+[root@master ~]# systemctl enable chronyd
+</code></pre>
+<h2 id="node节点"><a href="#node节点" class="headerlink" title="node节点"></a>node节点</h2><pre><code class="shell">[root@node ~]# yum install -y chrony
+[root@node ~]# vi /etc/chrony.conf
+server 192.168.100.15 iburst
+[root@node ~]# systemctl start chronyd
+[root@node ~]# systemctl enable chronyd
+
+###测试
+[root@node ~]# chronyc sources
+</code></pre>
+<h1 id="设置免密登录"><a href="#设置免密登录" class="headerlink" title="设置免密登录"></a>设置免密登录</h1><pre><code class="shell">[root@master ~]# ssh-keygen
+[root@master ~]# ssh-copy-id master
+[root@master ~]# ssh-copy-id node
+[root@master ~]# ssh-copy-id harbor
+
+[root@node ~]# ssh-keygen
+[root@node ~]# ssh-copy-id master
+[root@node ~]# ssh-copy-id node
+[root@node ~]# ssh-copy-id harbor
+</code></pre>
+<h1 id="安装-docker-应用"><a href="#安装-docker-应用" class="headerlink" title="安装 docker 应用"></a>安装 docker 应用</h1><pre><code class="shell">###所有节点安装 docker-ce:
+[root@master ~]# yum install -y yum-utils device-mapper-persistent-data lvm2
+[root@master ~]# yum install -y docker-ce
+
+###启动 Docker:
+[root@master ~]# systemctl start docker
+[root@master ~]# systemctl enable docker
+[root@master ~]# docker version
+</code></pre>
+<p>所有节点配置阿里云镜像加速地址(<a target="_blank" rel="noopener" href="https://5twf62k1.mirror.aliyuncs.com)并把启动引擎设置为/">https://5twf62k1.mirror.aliyuncs.com)并把启动引擎设置为</a> systemd，配置成功重启 docker 服务</p>
+<pre><code class="shell">###在所有节点调整部分docker 参数:
+[root@master~]# vi/etc/docker/daemon.json
+&#123;
+&quot;registry-mirrors&quot;:[&quot;https://5twf62kl.mirror.aliyuncs.com&quot;],
+&quot;exec-opts&quot;:[&quot;native.cgroupdriver=systemd&quot;]
+&#125;
+
+###重启dockers
+[root@master~]# systemctl restart docker
+</code></pre>
+<h1 id="修改-x2F-etc-x2F-sysctl-conf"><a href="#修改-x2F-etc-x2F-sysctl-conf" class="headerlink" title="修改 &#x2F;etc&#x2F;sysctl.conf"></a>修改 &#x2F;etc&#x2F;sysctl.conf</h1><pre><code class="shell">modprobe br_netfilter
+
+echo &quot;net.ipv4.ip_forward = 1&quot; &gt;&gt; /etc/sysctl.conf
+echo &quot;net.bridge.bridge-nf-call-ip6tables = 1&quot; &gt;&gt; /etc/sysctl.conf
+echo &quot;net.bridge.bridge-nf-call-iptables = 1&quot; &gt;&gt; /etc/sysctl.conf
+
+sysctl -p
+</code></pre>
+<h1 id="安装-docker-compose"><a href="#安装-docker-compose" class="headerlink" title="安装 docker-compose"></a>安装 docker-compose</h1><pre><code class="shell">[root@master~]# cp -f /opt/paas/docker-compose/v1.25.5-docker-compose-Linux-x86.64 \
+&gt; /usr/local/bin/docker-compose
+[root@master~]# scp -f /opt/paas/docker-compose/v1.25.5-docker-compose-Linux-x86.64 \
+&gt; harbor:/usr/local/bin/docker-compose
+[root@master~]# scp -f /opt/paas/docker-compose/v1.25.5-docker-compose-Linux-x86.64 \
+&gt; node:/usr/local/bin/docker-compose
+
+[root@master~]# chmod +x /usr/local/bin/docker-compose
+[root@master~]# docker-compose version
+docker-compose version 1.25.5, build 8alc60f6
+docker-py version:4.1.0
+CPython version: 3.7.5
+OpenSSL version: OpenSSL 1.1.01 10 Sep 2019
+</code></pre>
+<h1 id="搭建-horbor仓库"><a href="#搭建-horbor仓库" class="headerlink" title="搭建 horbor仓库"></a>搭建 horbor仓库</h1><pre><code class="shell">Harbor 节点部署 Harbor解压安装包:
+[root@harbor ~]# cd /opt/paas/harbor/
+[root@harbor ~]# tar -zxvf harbor-offline-installer-y2.1.0.tgz -C /usr/local/
+[root@harbor ~]# cd /usr/local/harbor/
+修改 Harbor配置信息:
+[root@harbor ~]# cp harbor.yml.tmpl harbor.yml
+[root@harbor ~]# vi harbor.yml
+hostname:192.168.100.93# 将域名修改为本机IP
+harbor admin password: Harborl2345
+#https:#禁用https
+# https port for harbor, default is 443
+# port: 443
+# The path ofcert and key files for nginx
+#certificate: /your/certificate/path
+# private key: /your/private/key/path
+
+###启动 Harbor:
+[root@harbor ~]# ./prepare
+[root@harbor ~]# ./installsh --with-clair
+</code></pre>
+<h2 id="修改默认仓库地址"><a href="#修改默认仓库地址" class="headerlink" title="修改默认仓库地址:"></a>修改默认仓库地址:</h2><pre><code class="shell">[root@master~]# vi /etc/docker/daemonjson
+&#123;
+&quot;insecure-registries&quot;: [&quot;192,168.100.93&quot;],
+&quot;registry-mirrors&quot;: [&quot;https://5twf62kI.mirroraliyuncs.com&quot;],
+&quot;exec-opts&quot;: [&quot;nutiye.cgrouipdriver systemd&quot;]
+&#125;
+
+[root@master~]# systemetl restart docker
+</code></pre>
+<h2 id="各节点登录harbor"><a href="#各节点登录harbor" class="headerlink" title="各节点登录harbor"></a>各节点登录harbor</h2><pre><code class="shell">[root@master~]# doeker login 192.168.100.93
+Username:admin
+Password:
+WARNING! Your password will be stored unencrypted in /root..docker/config.jsonConfigure
+a credential helper to remove this warning.See
+https:/docsdocker.com/engine/reference/commandline/login/#credentials-store
+</code></pre>
+<h1 id="上传-docker-镜像"><a href="#上传-docker-镜像" class="headerlink" title="上传 docker 镜像"></a>上传 docker 镜像</h1><pre><code class="shell">[root@master~]# for i in $(ls /opt/paas/images);do docker load -i $i ; done
+
+[root@master~]# sh /opt/paas/k8s image_push.sh
+</code></pre>
+<h1 id="安装kubeadm-工具"><a href="#安装kubeadm-工具" class="headerlink" title="安装kubeadm 工具"></a>安装kubeadm 工具</h1><p>在master节点、nodel节点、node2 节点分别安装Kubeadm 工具并设置为开机自启动</p>
+<pre><code class="shell">[root@master~]# yum install kubeadm-1.18 1 kubectl-1.18.1 kubelet-1.18.1 -y
+[root@master~]# systemnctl enable kubelet &amp;&amp; systemctl start kubelet
+</code></pre>
+<h1 id="初始化master节点"><a href="#初始化master节点" class="headerlink" title="初始化master节点"></a>初始化master节点</h1><h2 id="使用-kubcadm命令生成yaml文件"><a href="#使用-kubcadm命令生成yaml文件" class="headerlink" title="使用 kubcadm命令生成yaml文件"></a>使用 kubcadm命令生成yaml文件</h2><pre><code class="shell">[root@master~]# kubeadm config print init-defaults &gt; kubeadm-config.yaml
+[root@master~]# vi kubeadm-config.yaml
+localAPIEndpoint:
+  advertiseAddress:192.168.100.15      ###修改为 master 主机 P 地址
+  imageRepository: 192.168.1.00.16/library/   ###修改为本地镜像仓库地
+  kubernetesVersion: vl.18.1   ###修改版本号为当前版本号
+networking:
+  dnsDomain: cluster.local
+  serviceSubnet:10.96.0.0/12
+  podSubnet: 10.244.0.0/16    ###添加此 subnet 项
+
+###根据yaml文件使用 kubeadm 命令初始化master节点
+[root@master~]# kubeadm init --config kubeadm-config.yaml
+</code></pre>
+<h2 id="使用命令初始化"><a href="#使用命令初始化" class="headerlink" title="使用命令初始化"></a>使用命令初始化</h2><pre><code class="shell">[root@master~]# kubeadm init --kubernetes-version=1.18.1 \
+&gt; --apiserver-advertise-address=192.168.100.15 \
+&gt; --image-repository 192.168.100.16/library --pod-network-cidr=10.244.0.0/16
+</code></pre>
+<h2 id="初始化完成后执行命令"><a href="#初始化完成后执行命令" class="headerlink" title="初始化完成后执行命令"></a>初始化完成后执行命令</h2><pre><code class="shell">[root@master~]# mkdir-p SHOME/.kube/config
+[root@master~]# sudo cp -i/etc/kubernetes/admin.conf SHOME/.kube/config
+[root@master~]# sudo chown S(id-u):$(id -g)SHOME/kube/config
+</code></pre>
+<h2 id="查看状态"><a href="#查看状态" class="headerlink" title="查看状态"></a>查看状态</h2><pre><code class="sh">###查看集群状态:
+[root@master~]# kubectl get cs
+NAME                STATUS     MESSAGE     ERROR
+scheduler           Healthy    ok
+controller-manager  Healthy    ok
+etcd-0              Healthy    &#123;&quot;healthy&quot;:&quot;true&quot;&#125;
+
+###查看节点状态:
+[root@master~]# kubectl get nodes
+NAME     STATUS     ROLES    AGE    VERSION
+master   NotReady   master   6mls   v1.18.1
+</code></pre>
+<h1 id="安装网络插件"><a href="#安装网络插件" class="headerlink" title="安装网络插件"></a>安装网络插件</h1><pre><code class="shell">[root@master~]# kubectl apply -f yaml/kube-flannel.yaml   ###需要修改镜像地址
+[root@master~]# kubectl get nodes
+NAME STATUS ROLES AGL VERSION 
+master Ready master 17m V1.18.1
+</code></pre>
+<h2 id="删除污点"><a href="#删除污点" class="headerlink" title="删除污点"></a>删除污点</h2><pre><code class="shell">[root@master~]# kubectl taint nodes master node-role,kubernetes.io/master=:NoSchedule-
+</code></pre>
+<h1 id="给kubernetes-创建证书"><a href="#给kubernetes-创建证书" class="headerlink" title="给kubernetes 创建证书"></a>给kubernetes 创建证书</h1><pre><code class="shell">[root@master~]# mkdir dashboard-certs
+[root@master~]# cd dashboard-certs/
+[root@master~]# kubectl create namespace kubernetes-dashboard
+[root@master~]# openssl genrsa -out dashboard.key 2048
+Generating RSA private key, 2048 bit long modulus
+.........+++
+..................+++
+eis 65537(0x10001)
+[root@master~]# openssl req -days 36000 -new -out dashboard.csr \
+-key dashboard.key -subj &#39;/CN=dashboard-cert&#39;
+[root@master~]# openssl x509 -req -in dashboard.csr -signkey dashboard.key \
+-out dashboard.crt
+Signature ok
+subject=/CN=dashboard-cert
+Getting Private key
+[root@master~]# kubectl create secret generic kubernetes-dashboard-certs \
+--from-file=dashboard.key --from-file=dashboard.crt -n kubernetes-dashboard
+</code></pre>
+<h1 id="图形化界面安装"><a href="#图形化界面安装" class="headerlink" title="图形化界面安装"></a>图形化界面安装</h1><pre><code class="shell">[root@master~]# sed -i &quot;s/kubernetesui/$IP\/library/g&quot; /opt/yaml/dashboard/recommended.yaml
+[root@master~]# kubectl apply -f /opt/yaml/dashboard/recommended.yaml
+[root@master~]# kubectl apply -f /opt/yaml/dashboard/dashboard-adminuser.yaml
+
+###登录信息
+[root@master~]# kubectl describe secrets -n kubernetes-dashboard \
+&gt; dashboard-admin-token-7zzs9
+</code></pre>
+<h1 id="将node加入集群"><a href="#将node加入集群" class="headerlink" title="将node加入集群"></a>将node加入集群</h1><pre><code class="shell">###在master节点获取证书
+[root@master~]# kubeadm token create --ttl=0 ###永久有效 \
+ &gt;    --print-join-command #打印命令
+
+###将输出的命令在node节点执行
+
+###如果加入失败 
+kubeadm reset重置kubernetes再次加入
+</code></pre>
+<h1 id="安装metrics"><a href="#安装metrics" class="headerlink" title="安装metrics"></a>安装metrics</h1><pre><code class="shell">修改api-server启动参数
+vim /etc/kubernetes/manifests/kube-apiserver.yaml
+###spec.container.command中添加
+- --enable-aggregator-routing=true
+</code></pre>
+<h2 id="kubelet证书"><a href="#kubelet证书" class="headerlink" title="kubelet证书"></a><strong>kubelet证书</strong></h2><pre><code class="shell">metrics使用kubelet证书，为kubelet签发证书
+在/var/lib/kubelet/config.yaml配置文件中添加
+serverTLSBootstrap: true
+###重启服务
+[root@master ~]# systemctl restart kubelet.service
+</code></pre>
+<h3 id="签发证书"><a href="#签发证书" class="headerlink" title="签发证书"></a><strong>签发证书</strong></h3><pre><code class="shell">[root@master ~]# kubectl get certificatesigningrequests.certificates.k8s.io 
+NAME       AGE  SIGNERNAME                                   REQUESTOR                CONDITION
+csr-5qgq9  20s  kubernetes.io/kubelet-serving                system:node:node         Pending
+csr-9v68k  101s kubernetes.io/kubelet-serving                system:node:master       Pending
+csr-tw8s7  69m  kubernetes.io/kube-apiserver-client-kubelet  system:bootstrap:w1no5l  Approved,Issued
+csr-wv7vv  82m  kubernetes.io/kube-apiserver-client-kubelet  system:node:master       Approved,Issued
+[root@master ~]# kubectl certificate 
+approve deny 
+
+[root@master ~]# kubectl certificate approve csr-5qgq9
+certificatesigningrequest.certificates.k8s.io/csr-5qgq9 approved
+[root@master ~]# kubectl certificate approve csr-9v68k
+certificatesigningrequest.certificates.k8s.io/csr-9v68k approved
+</code></pre>
+</div><div class="article_tags"><span> <i class="yufont icon-tag"></i> 标签: </span></div></article><div class="article-copyright"><p>标题: <a href="/2023/03/12/k8s%20%E6%90%AD%E5%BB%BA/"></a></p><p> 链接: <a href="/2023/03/12/k8s%20%E6%90%AD%E5%BB%BA/">https://zhiyong0389.github.io/2023/03/12/k8s%20%E6%90%AD%E5%BB%BA/</a></p><p> 版权声明: 若无特殊标注皆为 智勇 原创版权, 转载请以链接形式注明作者及原始出处</p><p>最后编辑时间: 2023-03-12</p></div><div class="page_turning"><a class="page_up" href="/2023/03/12/k8s%20%E8%BF%90%E7%BB%B4/"
+  style="background-image:url(/assets/images/random/6.jpg)">
+  <div class="inner"><span>上一篇:</span>
+    <p>已经没有上一篇了</p>
+  </div>
+</a>
+<a class="page_down" href="javascript:;"
+style="background-image:url(/assets/images/random/2.jpg)">
+<div class="inner"><span>下一篇:</span>
+  <p>已经没有下一篇了</p>
+</div>
+</a>
+</div></div></div><div class="article_sidebar left"><div class="author_sidebar sidebar_container"><div class="author_info"><div class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/></div><div class="author_name"><h3><a href="/about">智勇</a></h3><p>不断学习，不断提升！</p></div></div><div class="author_data"><ul><li> <div> <span>34</span><p>文章</p></div></li><li> <div> <span>0</span><p>分类</p></div></li><li> <div> <span>15</span><p>标签</p></div></li></ul></div></div><div class="catalogue sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-feiji"></i>目录</h3><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9%E4%B8%BB%E6%9C%BA%E5%90%8D%EF%BC%8C%E5%85%B3%E9%97%ADswap%EF%BC%8C%E5%B9%B6%E9%85%8D%E7%BD%AEhosts%E6%98%A0%E5%B0%84"><span class="toc-number">1.</span> <span class="toc-text">修改主机名，关闭swap，并配置hosts映射</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Yum%E6%BA%90%E6%95%B0%E6%8D%AE%E7%9A%84%E6%8C%81%E4%B9%85%E5%8C%96%E6%8C%82%E8%BD%BD"><span class="toc-number">2.</span> <span class="toc-text">Yum源数据的持久化挂载</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Yum-%E6%BA%90%E7%9A%84%E7%BC%96%E5%86%99"><span class="toc-number">2.1.</span> <span class="toc-text">Yum 源的编写</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9C%A8master%E8%8A%82%E7%82%B9%E5%AE%89%E8%A3%85ftp%E6%9C%8D%E5%8A%A1%EF%BC%8C%E5%B0%86ftp%E5%85%B1%E4%BA%AB%E7%9B%AE%E5%BD%95%E8%AE%BE%E7%BD%AE%E4%B8%BA-x2F-opt-x2F-%E3%80%82"><span class="toc-number">2.2.</span> <span class="toc-text">在master节点安装ftp服务，将ftp共享目录设置为 &#x2F;opt&#x2F;。</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#node%E8%8A%82%E7%82%B9yum%E6%BA%90%E7%BC%96%E5%86%99"><span class="toc-number">2.3.</span> <span class="toc-text">node节点yum源编写</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AE%BE%E7%BD%AE%E6%97%B6%E9%97%B4%E5%90%8C%E6%AD%A5%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="toc-number">3.</span> <span class="toc-text">设置时间同步服务器</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#master%E8%8A%82%E7%82%B9"><span class="toc-number">3.1.</span> <span class="toc-text">master节点</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#node%E8%8A%82%E7%82%B9"><span class="toc-number">3.2.</span> <span class="toc-text">node节点</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AE%BE%E7%BD%AE%E5%85%8D%E5%AF%86%E7%99%BB%E5%BD%95"><span class="toc-number">4.</span> <span class="toc-text">设置免密登录</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85-docker-%E5%BA%94%E7%94%A8"><span class="toc-number">5.</span> <span class="toc-text">安装 docker 应用</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9-x2F-etc-x2F-sysctl-conf"><span class="toc-number">6.</span> <span class="toc-text">修改 &#x2F;etc&#x2F;sysctl.conf</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85-docker-compose"><span class="toc-number">7.</span> <span class="toc-text">安装 docker-compose</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%90%AD%E5%BB%BA-horbor%E4%BB%93%E5%BA%93"><span class="toc-number">8.</span> <span class="toc-text">搭建 horbor仓库</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9%E9%BB%98%E8%AE%A4%E4%BB%93%E5%BA%93%E5%9C%B0%E5%9D%80"><span class="toc-number">8.1.</span> <span class="toc-text">修改默认仓库地址:</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%90%84%E8%8A%82%E7%82%B9%E7%99%BB%E5%BD%95harbor"><span class="toc-number">8.2.</span> <span class="toc-text">各节点登录harbor</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%8A%E4%BC%A0-docker-%E9%95%9C%E5%83%8F"><span class="toc-number">9.</span> <span class="toc-text">上传 docker 镜像</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85kubeadm-%E5%B7%A5%E5%85%B7"><span class="toc-number">10.</span> <span class="toc-text">安装kubeadm 工具</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96master%E8%8A%82%E7%82%B9"><span class="toc-number">11.</span> <span class="toc-text">初始化master节点</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8-kubcadm%E5%91%BD%E4%BB%A4%E7%94%9F%E6%88%90yaml%E6%96%87%E4%BB%B6"><span class="toc-number">11.1.</span> <span class="toc-text">使用 kubcadm命令生成yaml文件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E5%91%BD%E4%BB%A4%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">11.2.</span> <span class="toc-text">使用命令初始化</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9D%E5%A7%8B%E5%8C%96%E5%AE%8C%E6%88%90%E5%90%8E%E6%89%A7%E8%A1%8C%E5%91%BD%E4%BB%A4"><span class="toc-number">11.3.</span> <span class="toc-text">初始化完成后执行命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E7%8A%B6%E6%80%81"><span class="toc-number">11.4.</span> <span class="toc-text">查看状态</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85%E7%BD%91%E7%BB%9C%E6%8F%92%E4%BB%B6"><span class="toc-number">12.</span> <span class="toc-text">安装网络插件</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%A0%E9%99%A4%E6%B1%A1%E7%82%B9"><span class="toc-number">12.1.</span> <span class="toc-text">删除污点</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%99kubernetes-%E5%88%9B%E5%BB%BA%E8%AF%81%E4%B9%A6"><span class="toc-number">13.</span> <span class="toc-text">给kubernetes 创建证书</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9B%BE%E5%BD%A2%E5%8C%96%E7%95%8C%E9%9D%A2%E5%AE%89%E8%A3%85"><span class="toc-number">14.</span> <span class="toc-text">图形化界面安装</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%B0%86node%E5%8A%A0%E5%85%A5%E9%9B%86%E7%BE%A4"><span class="toc-number">15.</span> <span class="toc-text">将node加入集群</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85metrics"><span class="toc-number">16.</span> <span class="toc-text">安装metrics</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#kubelet%E8%AF%81%E4%B9%A6"><span class="toc-number">16.1.</span> <span class="toc-text">kubelet证书</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AD%BE%E5%8F%91%E8%AF%81%E4%B9%A6"><span class="toc-number">16.1.1.</span> <span class="toc-text">签发证书</span></a></li></ol></li></ol></li></ol></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-24gl-folderOpen"></i>分类</h3><div class="archive_lists"><ul class="category-list"></ul></div></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-tag"></i>标签</h3><a href="/tags/Kubernetes/" style="font-size: 18.67px;">Kubernetes</a> <a href="/tags/ServiceMesh/" style="font-size: 16px;">ServiceMesh</a> <a href="/tags/helm-kubernetes/" style="font-size: 16px;">helm kubernetes</a> <a href="/tags/helm-k8s/" style="font-size: 17.33px;">helm,k8s</a> <a href="/tags/hexo-github%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" style="font-size: 20px;">hexo+github搭建博客</a> <a href="/tags/kubernetes/" style="font-size: 17.33px;">kubernetes</a> <a href="/tags/linux/" style="font-size: 17.33px;">linux</a> <a href="/tags/mycat-linux/" style="font-size: 16px;">mycat linux</a> <a href="/tags/mysql/" style="font-size: 16px;">mysql</a> <a href="/tags/openstack/" style="font-size: 17.33px;">openstack</a> <a href="/tags/openstack-%E4%BA%91%E8%AE%A1%E7%AE%97/" style="font-size: 17.33px;">openstack 云计算</a> <a href="/tags/springcloud-java/" style="font-size: 16px;">springcloud java</a> <a href="/tags/springcloud-java-%E5%BE%AE%E6%9C%8D%E5%8A%A1/" style="font-size: 16px;">springcloud java 微服务</a> <a href="/tags/zookeeper-Hadoop/" style="font-size: 16px;">zookeeper Hadoop</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93-mysql/" style="font-size: 16px;">数据库 mysql</a></div></div></div><footer class="footer"> <div class="footer_bottom"><div class="footer_box"><div class="copy"><span>主题</span><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn">Hexo</a><span>模板</span><a href="/">智勇</a></div><div class="copy"><span>© 2023<a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/#/Integrated/index">豫ICP备2023014079号-1</a></span></div></div></div></footer><html><head></head><body><span id="span"></span><script type="text/javascript">function runtime(){
+        // 初始时间，日/月/年 时:分:秒
+        X = new Date("01/01/2023 8:32:00");
+        Y = new Date();
+        T = (Y.getTime()-X.getTime());
+        M = 24*60*60*1000;
+        a = T/M;
+        A = Math.floor(a);
+        b = (a-A)*24;
+        B = Math.floor(b);
+        c = (b-B)*60;
+        C = Math.floor((b-B)*60);
+        D = Math.floor((c-C)*60);
+        //信息写入到DIV中
+        span.innerHTML = "本站勉强运行: "+A+"天"+B+"小时"+C+"分"+D+"秒"
+    }
+    setInterval(runtime, 1000);
+</script></body></html><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"> </script><script src="/assets/lib/prettify/prettify.js"> </script><script src="/assets/lib/fancybox/fancybox.js"> </script><script src="/assets/js/app.js"> </script></div></body></html>

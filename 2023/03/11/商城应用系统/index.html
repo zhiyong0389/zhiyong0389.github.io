@@ -1,0 +1,300 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="shortcut icon" href="/assets/imgs/favicon.ico" type="image/x-icon"><title>商城应用系统 | 智勇</title><meta name="keywords" content="springcloud java"><meta name="keywords" content="记录个人学习生活"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_3435803_wadmwlqwhps.css"><link rel="stylesheet" href="/style/index.css"><link rel="stylesheet" href="/assets/lib/prettify/prettify.css"><link rel="stylesheet" href="/assets/lib/fancybox/fancybox.css"><meta name="generator" content="Hexo 6.3.0"></head><body><div id="app"><header class="header yu13_p_30" id="header"><div class="header_left"><h1 class="yu13_logo"><a id="logo" href="/">智勇</a></h1></div><div class="header_right"><div class="header_search yu13_cursor yu13_hover" id="search"><i class="yufont icon-sousuo"></i></div><div class="line yu13_p_10"></div><nav class="header_nav"><ul class="nav"><li class="menu_nav"><a href="/"><i class="fas"></i><span> 首页</span></a></li><li class="menu_nav"><a href="/archives"><i class="fas"></i><span> 归档</span></a></li><li class="menu_nav"><a href="/categorys"><i class="fas"></i><span> 分类</span></a></li><li class="menu_nav"><a href="/tags"><i class="fas"></i><span> 标签</span></a></li><li class="menu_nav"><a href="/links"><i class="fas"></i><span> 友情链接</span></a></li></ul></nav></div></header><div class="article_topbg" style="background-image: url('/assets/imgs/top_bg.jpg')"><div class="topbg_container"><h1 class="title">商城应用系统</h1><div class="info"><div class="article_meta"><div class="left"><span class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/><a href="/about">智勇</a></span><span><i class="yufont icon-yingyong"></i><span>暂无分类</span></span><span><i class="yufont icon-rili"></i>2023-3-12</span></div></div></div></div></div><div class="container log_container clearfix"><div class="article_content left"> <div class="article_main"><article class="content"><div class="content_text article_text"> <p><a target="_blank" rel="noopener" href="https://pan.baidu.com/s/1qyYBVqjIMiKoCLeATeZdPA?pwd=1qpb">所需软件包</a></p>
+<p>将云梦公司开发的应用商城Mall重新实现全容器化部署，原应用商城系统各模块功能及系统架构如下：</p>
+<table>
+<thead>
+<tr>
+<th><em><strong>*模块*</strong></em></th>
+<th><em><strong>*使用技术*</strong></em></th>
+<th><em><strong>*备注*</strong></em></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>mall.sql</td>
+<td>MySQL</td>
+<td>网站的数据库</td>
+</tr>
+<tr>
+<td>dist目录</td>
+<td>Nginx</td>
+<td>网站的前端项目</td>
+</tr>
+<tr>
+<td>mall-shopping</td>
+<td>web项目</td>
+<td>8081端口，商品&#x2F;购物车&#x2F;首页渲染等交互</td>
+</tr>
+<tr>
+<td>mall-user</td>
+<td></td>
+<td>8082端口，提供用户相关的交互，如登录、注册、个人中心等</td>
+</tr>
+<tr>
+<td>user-provider</td>
+<td>后端服务</td>
+<td>提供用户相关服务</td>
+</tr>
+<tr>
+<td>shopping-provider</td>
+<td></td>
+<td>提供购物车、推荐商品、商品等服务</td>
+</tr>
+</tbody></table>
+<p><img src="https://i.328888.xyz/2023/02/28/zB5BA.png" alt="img"></p>
+<h1 id="1-编写Dockerfile制作数据库MySQL镜像"><a href="#1-编写Dockerfile制作数据库MySQL镜像" class="headerlink" title="1.编写Dockerfile制作数据库MySQL镜像"></a>1.编写Dockerfile制作数据库MySQL镜像</h1><p>镜像名为mall-mysql:v1.1，使用centos:7.9.2009基础镜像，安装mariadb数据库，</p>
+<p>设置数据库支持UTF-8编码，设定root用户的密码为123456，并设置服务开机自启。</p>
+<h2 id="Dockerfile"><a href="#Dockerfile" class="headerlink" title="Dockerfile"></a>Dockerfile</h2><pre><code class="dockerfile">FROM 192.168.121.21/library/centos:centos7.5.1804
+MAINTAINER Chinaskill
+RUN rm -rvf /etc/yum.repos.d/*
+ADD ftp.repo /etc/yum.repos.d/
+ADD gpmall.sql /root/
+RUN yum install -y mariadb-server
+RUN sed -i &quot;13cport = 8066&quot; /etc/my.cnf.d/server.cnf
+ADD init.sh /root/init.sh
+RUN chmod +x /root/init.sh
+RUN /root/init.sh
+ENV LC_ALL en_US.UTF-8
+EXPOSE 3306
+EXPOSE 8066
+CMD [&quot;mysqld_safe&quot;]
+</code></pre>
+<h2 id="init-sh"><a href="#init-sh" class="headerlink" title="init.sh"></a>init.sh</h2><pre><code class="bash">#!/bin/bash
+mysql_install_db --user=mysql
+mysqld_safe &amp;
+sleep 3s
+mysqladmin -u root password &#39;123456&#39;
+sleep 3s
+mysql -uroot -p123456 -e &quot;GRANT ALL PRIVILEGES ON *.* TO &#39;root&#39;@&#39;%&#39; IDENTIFIED BY &#39;123456&#39;&quot; 
+sleep 3s
+mysql -uroot -p123456 -e &quot;create database gpmall;use gpmall;&quot;
+mysql -uroot -p123456 gpmall &lt; /root/gpmall.sql
+</code></pre>
+<h2 id="ftp-repo"><a href="#ftp-repo" class="headerlink" title="ftp.repo"></a>ftp.repo</h2><pre><code class="shell">[gpmall]
+name=gpmall
+baseurl=ftp://192.168.121.21/ChinaskillMall/gpmall-repo
+gpgcheck=0
+nabled=1
+[centos]
+name=centos
+baseurl=ftp://192.168.121.21/centos
+gpgcheck=0
+enabled=1
+</code></pre>
+<h2 id="创建镜像"><a href="#创建镜像" class="headerlink" title="创建镜像"></a>创建镜像</h2><pre><code class="shell">docker build -t mall-xxxx:v1.1 .
+</code></pre>
+<h1 id="2-编写Dockerfile制作Redis镜像"><a href="#2-编写Dockerfile制作Redis镜像" class="headerlink" title="2.编写Dockerfile制作Redis镜像"></a>2.编写Dockerfile制作Redis镜像</h1><p>镜像名为mall-redis:v1.1，使用centos:centos7.9.2009基础镜像，安装Redis服务，</p>
+<p>设置Redis免密，并关闭保护模式，开放端口6379，并设置服务开机自启。</p>
+<p>Dockerfile</p>
+<pre><code class="dockerfile">FROM 192.168.121.21/library/centos:centos7.5.1804
+MAINTAINER Chinaskill
+RUN rm -rvf /etc/yum.repos.d/*
+COPY ftp.repo /etc/yum.repos.d/local.repo
+RUN yum clean all
+RUN yum list
+RUN yum -y install redis
+RUN sed -i -e &#39;s@bind 127.0.0.1@bind 0.0.0.0@g&#39; /etc/redis.conf
+RUN sed -i -e &#39;s@protected-mode yes@protected-mode no@g&#39; /etc/redis.conf
+RUN sed -i -e &#39;s@daemonize yes@daemonize no@g&#39; /etc/redis.conf
+EXPOSE 6379
+ENTRYPOINT redis-server /etc/redis.conf
+CMD [&quot;redis-server&quot;]
+</code></pre>
+<h2 id="创建镜像-1"><a href="#创建镜像-1" class="headerlink" title="创建镜像"></a>创建镜像</h2><pre><code class="shell">docker build -t mall-xxxx:v1.1 .
+</code></pre>
+<h1 id="3-编写Dockerfile制作Kafka镜像"><a href="#3-编写Dockerfile制作Kafka镜像" class="headerlink" title="3.编写Dockerfile制作Kafka镜像"></a>3.编写Dockerfile制作Kafka镜像</h1><p>镜像名为mall-kafka:v1.1，使用centos:centos7.9.2009基础镜像，</p>
+<p>安装Kafka服务，开放端口9092，并设置服务开机自启。</p>
+<h2 id="Dockerfile-1"><a href="#Dockerfile-1" class="headerlink" title="Dockerfile"></a>Dockerfile</h2><pre><code class="dockerfile">FROM 192.168.121.21/library/centos:centos7.5.1804
+MAINTAINER Chinaskill
+RUN rm -rvf /etc/yum.repos.d/*
+COPY ftp.repo /etc/yum.repos.d/local.repo
+RUN yum -y install java-1.8.0
+ADD kafka_2.11-1.1.1.tgz /usr/local
+ENV KAFKA_HOME /usr/local/kafka_2.11-1.1.1
+RUN sed -i &#39;s/localhost:2181/zk1.mall:2181,zk2.mall:2181,zk3.mall:2181/g&#39; \
+/usr/local/kafka_2.11-1.1.1/config/server.properties
+EXPOSE 9092
+ENTRYPOINT [ &quot;/usr/local/kafka_2.11-1.1.1/bin/kafka-server-start.sh&quot;, \
+&quot;/usr/local/kafka_2.11-1.1.1/config/server.properties&quot; ]
+</code></pre>
+<h2 id="创建镜像-2"><a href="#创建镜像-2" class="headerlink" title="创建镜像"></a>创建镜像</h2><pre><code class="shell">docker build -t mall-xxxx:v1.1 .
+</code></pre>
+<h1 id="4-编写Dockerfile制作ZooKeeper镜像"><a href="#4-编写Dockerfile制作ZooKeeper镜像" class="headerlink" title="4.编写Dockerfile制作ZooKeeper镜像"></a>4.编写Dockerfile制作ZooKeeper镜像</h1><p>镜像名为mall-zookeeper:v1.1，使用centos:7.9.2009基础镜像，</p>
+<p>安装ZooKeeper服务，开放端口2181；并设置服务开机自启。</p>
+<h2 id="Dockerfile-2"><a href="#Dockerfile-2" class="headerlink" title="Dockerfile"></a>Dockerfile</h2><pre><code class="dockerfile">FROM 192.168.121.21/library/centos:centos7.5.1804
+MAINTAINER Chinaskill
+RUN rm -rvf /etc/yum.repos.d/*
+COPY ftp.repo /etc/yum.repos.d/local.repo
+RUN yum -y install java-1.8.0
+ADD zookeeper-3.4.14.tar.gz /usr/local
+ENV ZOOKEEPER_HOME /usr/local/zookeeper-3.4.14
+ENV PATH $PATH:$JAVA_HOME/bin:$JRE_HOME/bin:$ZOOKEEPER_HOME/bin
+EXPOSE 2181
+EXPOSE 2888
+EXPOSE 3888
+CMD $ZOOKEEPER_HOME/bin/zkServer.sh start-foreground
+</code></pre>
+<h2 id="创建镜像-3"><a href="#创建镜像-3" class="headerlink" title="创建镜像"></a>创建镜像</h2><pre><code class="shell">docker build -t mall-xxxx:v1.1 .
+</code></pre>
+<h1 id="5-编写Dockerfile制作nginx镜像"><a href="#5-编写Dockerfile制作nginx镜像" class="headerlink" title="5.编写Dockerfile制作nginx镜像"></a>5.编写Dockerfile制作nginx镜像</h1><p>镜像名为mall-nginx:v1.1，使用centos:7.9.2009基础镜像，</p>
+<p>安装nginx服务，开放端口2181；并设置服务开机自启。</p>
+<h2 id="Dockerfile-3"><a href="#Dockerfile-3" class="headerlink" title="Dockerfile"></a>Dockerfile</h2><pre><code class="dockerfile">FROM 192.168.121.21/library/centos:centos7.5.1804
+MAINTAINER Chinaskill
+RUN rm -rvf /etc/yum.repos.d/*
+ADD ftp.repo /etc/yum.repos.d/
+RUN yum install nginx -y
+RUN sed -i &#39;12ilocation /user &#123;proxy_pass http://jar:8082;&#125;&#39; /etc/nginx/conf.d/default.conf
+RUN sed -i &#39;12ilocation /shopping &#123;proxy_pass http://jar:8081;&#125;&#39; /etc/nginx/conf.d/default.conf
+RUN rm -rf /usr/share/nginx/html/*
+ADD dist/ /usr/share/nginx/html/
+EXPOSE 80
+CMD [&quot;nginx&quot;,&quot;-g&quot;,&quot;daemon off;&quot;]
+</code></pre>
+<h2 id="创建镜像-4"><a href="#创建镜像-4" class="headerlink" title="创建镜像"></a>创建镜像</h2><pre><code class="shell">docker build -t mall-xxxx:v1.1 .
+</code></pre>
+<h1 id="6-编写Dockerfile制作jar包运行环境镜像"><a href="#6-编写Dockerfile制作jar包运行环境镜像" class="headerlink" title="6.编写Dockerfile制作jar包运行环境镜像"></a>6.编写Dockerfile制作jar包运行环境镜像</h1><h2 id="Dockerfile-4"><a href="#Dockerfile-4" class="headerlink" title="Dockerfile"></a>Dockerfile</h2><pre><code class="dockerfile">FROM 192.168.121.21/library/centos:centos7.5.1804
+MAINTAINER Chinaskill
+RUN rm -rvf /etc/yum.repos.d/*
+ADD ftp.repo /etc/yum.repos.d/
+#RUN yum install -y java-1.8.0
+ADD jdk-8u77-linux-x64.tar.gz /opt
+ENV JAVA_HOME=/opt/jdk1.8.0_77
+ENV JRE_HOME=$&#123;JAVA_HOME&#125;/jre 
+ENV CLASSPATH=.:$&#123;JAVA_HOME&#125;/lib:$&#123;JRE_HOME&#125;/lib 
+ENV PATH=$&#123;JAVA_HOME&#125;/bin:$PATH
+ADD gpmall-shopping-0.0.1-SNAPSHOT.jar /opt/
+ADD gpmall-user-0.0.1-SNAPSHOT.jar opt/
+ADD shopping-provider-0.0.1-SNAPSHOT.jar /opt/
+ADD user-provider-0.0.1-SNAPSHOT.jar /opt/
+ADD start.sh /start.sh
+RUN chmod +x /start.sh
+EXPOSE 8081
+EXPOSE 8082
+EXPOSE 20880
+EXPOSE 20881
+EXPOSE 9090
+CMD [&quot;bash&quot;,&quot;/start.sh&quot;]
+</code></pre>
+<h2 id="start-sh"><a href="#start-sh" class="headerlink" title="start.sh"></a>start.sh</h2><pre><code class="bash">#!/bin/bash
+sleep 5
+nohup java -jar /opt/shopping-provider-0.0.1-SNAPSHOT.jar &amp;
+sleep 30
+nohup java -jar /opt/user-provider-0.0.1-SNAPSHOT.jar &amp;
+sleep 30
+nohup java -jar /opt/gpmall-shopping-0.0.1-SNAPSHOT.jar &amp;
+sleep 30
+nohup java -jar /opt/gpmall-user-0.0.1-SNAPSHOT.jar &amp;
+sleep 30
+while [[ true ]]; do
+  sleep 1
+done
+</code></pre>
+<h2 id="创建镜像-5"><a href="#创建镜像-5" class="headerlink" title="创建镜像"></a>创建镜像</h2><pre><code class="shell">docker build -t mall-xxxx:v1.1 .
+</code></pre>
+<h1 id="7-编写docker-compose-yaml文件，使用上述镜像编排部署Mall应用商城。"><a href="#7-编写docker-compose-yaml文件，使用上述镜像编排部署Mall应用商城。" class="headerlink" title="7.编写docker-compose.yaml文件，使用上述镜像编排部署Mall应用商城。"></a>7.编写docker-compose.yaml文件，使用上述镜像编排部署Mall应用商城。</h1><h2 id="docker-compose-yml"><a href="#docker-compose-yml" class="headerlink" title="docker-compose.yml"></a>docker-compose.yml</h2><pre><code class="yaml">version: &#39;2&#39;
+services:
+  zk1.mall:
+    image: 192.168.1.10/library/mall-xxxx:v1.1
+    restart: always
+    expose:
+    - 2181
+    - 2888
+    - 3888
+    volumes:
+    - ./zookeeper1/conf:/usr/local/zookeeper-3.4.14/conf
+    - ./zookeeper1/data:/data
+
+  zk2.mall:
+    image: 192.168.1.10/library/mall-xxxx:v1.1
+    restart: always
+    expose:
+    - 2181
+    - 2888
+    - 3888
+    volumes:
+    - ./zookeeper2/conf:/usr/local/zookeeper-3.4.14/conf
+    - ./zookeeper2/data:/data 
+
+  zk3.mall:
+    image: 192.168.1.10/library/mall-xxxx:v1.1
+    restart: always
+    expose:
+    - 2181
+    - 2888
+    - 3888
+    volumes:
+    - ./zookeeper3/conf:/usr/local/zookeeper-3.4.14/conf
+    - ./zookeeper3/data:/data 
+
+  kafka1.mall:
+    image: 192.168.1.10/library/mall-xxxx:v1.1
+    restart: always
+    expose:
+    - 9092
+    links:
+    - zk1.mall
+    - zk2.mall
+    - zk3.mall
+
+  redis.mall:
+    image: 192.168.1.10/library/mall-xxxx:v1.1
+    expose:
+    - 6379
+
+  mysql.mall:
+    image: 192.168.1.10/library/mall-xxxx:v1.1
+    expose:
+    - 8066
+
+  nginx:
+    image: 192.168.1.10/library/mall-xxxx:v1.1
+    restart: always
+    ports:
+    - &quot;80:80&quot;
+    links:
+    - jar
+
+  jar:
+    image: 192.168.1.10/library/mall-xxxx:v1.1
+    links:
+    - kafka1.mal
+    - mysql.mall
+    - redis.mall
+    - zk1.mall
+    - zk2.mall
+    - zk3.mall
+    expose:
+    - 8081
+    - 8082
+    - 20880
+    - 20881
+    - 9090
+</code></pre>
+</div><div class="article_tags"><span> <i class="yufont icon-tag"></i> 标签: </span><a href="/tags/springcloud-java/">springcloud java</a></div></article><div class="article-copyright"><p>标题: <a href="/2023/03/11/%E5%95%86%E5%9F%8E%E5%BA%94%E7%94%A8%E7%B3%BB%E7%BB%9F/">商城应用系统</a></p><p> 链接: <a href="/2023/03/11/%E5%95%86%E5%9F%8E%E5%BA%94%E7%94%A8%E7%B3%BB%E7%BB%9F/">https://zhiyong0389.github.io/2023/03/11/%E5%95%86%E5%9F%8E%E5%BA%94%E7%94%A8%E7%B3%BB%E7%BB%9F/</a></p><p> 版权声明: 若无特殊标注皆为 智勇 原创版权, 转载请以链接形式注明作者及原始出处</p><p>最后编辑时间: 2023-03-12</p></div><div class="page_turning"><a class="page_up" href="/2023/03/11/%E9%83%A8%E7%BD%B2%E4%B8%BB%E4%BB%8E%E6%95%B0%E6%8D%AE%E5%BA%93/"
+  style="background-image:url(/assets/images/random/34.jpg)">
+  <div class="inner"><span>上一篇:</span>
+    <p>部署主从数据库</p>
+  </div>
+</a>
+<a class="page_down" href="/2023/03/11/%E5%95%86%E5%9F%8E%E9%83%A8%E7%BD%B2%E7%BB%84%E4%BB%B6%E8%A7%A3%E6%9E%90/"
+style="background-image:url(/assets/images/random/30.jpg)">
+<div class="inner"><span>下一篇:</span>
+  <p>商城部署组件解析</p>
+</div>
+</a>
+</div></div></div><div class="article_sidebar left"><div class="author_sidebar sidebar_container"><div class="author_info"><div class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/></div><div class="author_name"><h3><a href="/about">智勇</a></h3><p>不断学习，不断提升！</p></div></div><div class="author_data"><ul><li> <div> <span>34</span><p>文章</p></div></li><li> <div> <span>0</span><p>分类</p></div></li><li> <div> <span>15</span><p>标签</p></div></li></ul></div></div><div class="catalogue sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-feiji"></i>目录</h3><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E7%BC%96%E5%86%99Dockerfile%E5%88%B6%E4%BD%9C%E6%95%B0%E6%8D%AE%E5%BA%93MySQL%E9%95%9C%E5%83%8F"><span class="toc-number">1.</span> <span class="toc-text">1.编写Dockerfile制作数据库MySQL镜像</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Dockerfile"><span class="toc-number">1.1.</span> <span class="toc-text">Dockerfile</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#init-sh"><span class="toc-number">1.2.</span> <span class="toc-text">init.sh</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ftp-repo"><span class="toc-number">1.3.</span> <span class="toc-text">ftp.repo</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E9%95%9C%E5%83%8F"><span class="toc-number">1.4.</span> <span class="toc-text">创建镜像</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-%E7%BC%96%E5%86%99Dockerfile%E5%88%B6%E4%BD%9CRedis%E9%95%9C%E5%83%8F"><span class="toc-number">2.</span> <span class="toc-text">2.编写Dockerfile制作Redis镜像</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E9%95%9C%E5%83%8F-1"><span class="toc-number">2.1.</span> <span class="toc-text">创建镜像</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3-%E7%BC%96%E5%86%99Dockerfile%E5%88%B6%E4%BD%9CKafka%E9%95%9C%E5%83%8F"><span class="toc-number">3.</span> <span class="toc-text">3.编写Dockerfile制作Kafka镜像</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Dockerfile-1"><span class="toc-number">3.1.</span> <span class="toc-text">Dockerfile</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E9%95%9C%E5%83%8F-2"><span class="toc-number">3.2.</span> <span class="toc-text">创建镜像</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#4-%E7%BC%96%E5%86%99Dockerfile%E5%88%B6%E4%BD%9CZooKeeper%E9%95%9C%E5%83%8F"><span class="toc-number">4.</span> <span class="toc-text">4.编写Dockerfile制作ZooKeeper镜像</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Dockerfile-2"><span class="toc-number">4.1.</span> <span class="toc-text">Dockerfile</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E9%95%9C%E5%83%8F-3"><span class="toc-number">4.2.</span> <span class="toc-text">创建镜像</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#5-%E7%BC%96%E5%86%99Dockerfile%E5%88%B6%E4%BD%9Cnginx%E9%95%9C%E5%83%8F"><span class="toc-number">5.</span> <span class="toc-text">5.编写Dockerfile制作nginx镜像</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Dockerfile-3"><span class="toc-number">5.1.</span> <span class="toc-text">Dockerfile</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E9%95%9C%E5%83%8F-4"><span class="toc-number">5.2.</span> <span class="toc-text">创建镜像</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#6-%E7%BC%96%E5%86%99Dockerfile%E5%88%B6%E4%BD%9Cjar%E5%8C%85%E8%BF%90%E8%A1%8C%E7%8E%AF%E5%A2%83%E9%95%9C%E5%83%8F"><span class="toc-number">6.</span> <span class="toc-text">6.编写Dockerfile制作jar包运行环境镜像</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Dockerfile-4"><span class="toc-number">6.1.</span> <span class="toc-text">Dockerfile</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#start-sh"><span class="toc-number">6.2.</span> <span class="toc-text">start.sh</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E9%95%9C%E5%83%8F-5"><span class="toc-number">6.3.</span> <span class="toc-text">创建镜像</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#7-%E7%BC%96%E5%86%99docker-compose-yaml%E6%96%87%E4%BB%B6%EF%BC%8C%E4%BD%BF%E7%94%A8%E4%B8%8A%E8%BF%B0%E9%95%9C%E5%83%8F%E7%BC%96%E6%8E%92%E9%83%A8%E7%BD%B2Mall%E5%BA%94%E7%94%A8%E5%95%86%E5%9F%8E%E3%80%82"><span class="toc-number">7.</span> <span class="toc-text">7.编写docker-compose.yaml文件，使用上述镜像编排部署Mall应用商城。</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#docker-compose-yml"><span class="toc-number">7.1.</span> <span class="toc-text">docker-compose.yml</span></a></li></ol></li></ol></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-24gl-folderOpen"></i>分类</h3><div class="archive_lists"><ul class="category-list"></ul></div></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-tag"></i>标签</h3><a href="/tags/Kubernetes/" style="font-size: 18.67px;">Kubernetes</a> <a href="/tags/ServiceMesh/" style="font-size: 16px;">ServiceMesh</a> <a href="/tags/helm-kubernetes/" style="font-size: 16px;">helm kubernetes</a> <a href="/tags/helm-k8s/" style="font-size: 17.33px;">helm,k8s</a> <a href="/tags/hexo-github%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" style="font-size: 20px;">hexo+github搭建博客</a> <a href="/tags/kubernetes/" style="font-size: 17.33px;">kubernetes</a> <a href="/tags/linux/" style="font-size: 17.33px;">linux</a> <a href="/tags/mycat-linux/" style="font-size: 16px;">mycat linux</a> <a href="/tags/mysql/" style="font-size: 16px;">mysql</a> <a href="/tags/openstack/" style="font-size: 17.33px;">openstack</a> <a href="/tags/openstack-%E4%BA%91%E8%AE%A1%E7%AE%97/" style="font-size: 17.33px;">openstack 云计算</a> <a href="/tags/springcloud-java/" style="font-size: 16px;">springcloud java</a> <a href="/tags/springcloud-java-%E5%BE%AE%E6%9C%8D%E5%8A%A1/" style="font-size: 16px;">springcloud java 微服务</a> <a href="/tags/zookeeper-Hadoop/" style="font-size: 16px;">zookeeper Hadoop</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93-mysql/" style="font-size: 16px;">数据库 mysql</a></div></div></div><footer class="footer"> <div class="footer_bottom"><div class="footer_box"><div class="copy"><span>主题</span><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn">Hexo</a><span>模板</span><a href="/">智勇</a></div><div class="copy"><span>© 2023<a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/#/Integrated/index">豫ICP备2023014079号-1</a></span></div></div></div></footer><html><head></head><body><span id="span"></span><script type="text/javascript">function runtime(){
+        // 初始时间，日/月/年 时:分:秒
+        X = new Date("01/01/2023 8:32:00");
+        Y = new Date();
+        T = (Y.getTime()-X.getTime());
+        M = 24*60*60*1000;
+        a = T/M;
+        A = Math.floor(a);
+        b = (a-A)*24;
+        B = Math.floor(b);
+        c = (b-B)*60;
+        C = Math.floor((b-B)*60);
+        D = Math.floor((c-C)*60);
+        //信息写入到DIV中
+        span.innerHTML = "本站勉强运行: "+A+"天"+B+"小时"+C+"分"+D+"秒"
+    }
+    setInterval(runtime, 1000);
+</script></body></html><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"> </script><script src="/assets/lib/prettify/prettify.js"> </script><script src="/assets/lib/fancybox/fancybox.js"> </script><script src="/assets/js/app.js"> </script></div></body></html>

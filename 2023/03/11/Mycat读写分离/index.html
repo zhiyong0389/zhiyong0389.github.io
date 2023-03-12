@@ -1,0 +1,192 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="shortcut icon" href="/assets/imgs/favicon.ico" type="image/x-icon"><title>mycat读写分离 | 智勇</title><meta name="keywords" content="mycat linux"><meta name="keywords" content="记录个人学习生活"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_3435803_wadmwlqwhps.css"><link rel="stylesheet" href="/style/index.css"><link rel="stylesheet" href="/assets/lib/prettify/prettify.css"><link rel="stylesheet" href="/assets/lib/fancybox/fancybox.css"><meta name="generator" content="Hexo 6.3.0"></head><body><div id="app"><header class="header yu13_p_30" id="header"><div class="header_left"><h1 class="yu13_logo"><a id="logo" href="/">智勇</a></h1></div><div class="header_right"><div class="header_search yu13_cursor yu13_hover" id="search"><i class="yufont icon-sousuo"></i></div><div class="line yu13_p_10"></div><nav class="header_nav"><ul class="nav"><li class="menu_nav"><a href="/"><i class="fas"></i><span> 首页</span></a></li><li class="menu_nav"><a href="/archives"><i class="fas"></i><span> 归档</span></a></li><li class="menu_nav"><a href="/categorys"><i class="fas"></i><span> 分类</span></a></li><li class="menu_nav"><a href="/tags"><i class="fas"></i><span> 标签</span></a></li><li class="menu_nav"><a href="/links"><i class="fas"></i><span> 友情链接</span></a></li></ul></nav></div></header><div class="article_topbg" style="background-image: url('/assets/imgs/top_bg.jpg')"><div class="topbg_container"><h1 class="title">mycat读写分离</h1><div class="info"><div class="article_meta"><div class="left"><span class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/><a href="/about">智勇</a></span><span><i class="yufont icon-yingyong"></i><span>暂无分类</span></span><span><i class="yufont icon-rili"></i>2023-3-12</span></div></div></div></div></div><div class="container log_container clearfix"><div class="article_content left"> <div class="article_main"><article class="content"><div class="content_text article_text"> <h1 id="准备工作"><a href="#准备工作" class="headerlink" title="准备工作"></a>准备工作</h1><p>各节点配置主机名、IP、关闭防⽕墙、关闭selinux、同步时间</p>
+<h1 id="安装JDK"><a href="#安装JDK" class="headerlink" title="安装JDK"></a>安装JDK</h1><p>Mycat 是使⽤Java开发的，因此需要先安装JDK。</p>
+<pre><code class="shell">### 安装JDK
+[root@node1 ~]# yum install -y java-1.8.0-openjdk java-1.8.0-openjdk-devel
+
+### 验证JDK版本
+[root@node1 ~]# java -version
+openjdk version &quot;1.8.0_342&quot;
+OpenJDK Runtime Environment (build 1.8.0_342-b07)
+OpenJDK 64-Bit Server VM (build 25.342-b07, mixed mode)
+</code></pre>
+<h1 id="安装MyCAT"><a href="#安装MyCAT" class="headerlink" title="安装MyCAT"></a>安装MyCAT</h1><p>事先将 Mycat 的⼆进制软件包 Mycat-server-1.6.tar.gz 上传到 Mycat节点的 &#x2F;root ⽬录下</p>
+<pre><code class="shell">[root@node1 ~]# cp /opt/Mycat-server-1.6-RELEASE-20161028204710-linux.tar.gz /root
+
+### 将MyCAT软件包解压到/usr/local⽬录
+[root@node1 ~]# tar -zxvf Mycat-server-1.6-RELEASE-20161028204710-linux.tar.gz -C /usr/local/
+
+### 赋予mycat⽬录权限
+[root@node1 ~]# chown -R 777 /usr/local/mycat/
+
+### 添加Mycat服务的系统环境变量
+[root@node1 ~]# echo export MYCAT_HOME=/usr/local/mycat/ &gt;&gt; /etc/profile
+
+### 使环境变量⽣效
+[root@node1 ~]# source /etc/profile
+</code></pre>
+<h1 id="配置MyCAT读写分离"><a href="#配置MyCAT读写分离" class="headerlink" title="配置MyCAT读写分离"></a>配置MyCAT读写分离</h1><p>配置MyCAT实现读写分离需要修改两个配置⽂件。</p>
+<p>* schema.xml ：⽤于配置读写分离规则。它管理着逻辑库、分⽚表、分⽚节点和分⽚主机等信息。</p>
+<p>* server.xml ：⽤于配置⽤户访问规则。</p>
+<h2 id="配置读写分离规则"><a href="#配置读写分离规则" class="headerlink" title="配置读写分离规则"></a>配置读写分离规则</h2><ul>
+<li>在这⾥定义⼀个逻辑库( schema)USERDB。</li>
+<li>逻辑库 USERDB 对应数据库为 test（在部署主从数据库时已创建）。</li>
+<li>设置数据库写⼊节点为主节点 192.168.137.102。</li>
+<li>设置数据库读取节点为从节点 192.168.137.103。</li>
+</ul>
+<pre><code class="xml">[root@node1 ~]# vi /usr/local/mycat/conf/schema.xml
+[root@node1 ~]# cat /usr/local/mycat/conf/schema.xml
+&lt;?xml version=&quot;1.0&quot;?&gt;
+&lt;!DOCTYPE mycat:schema SYSTEM &quot;schema.dtd&quot;&gt;
+&lt;mycat:schema xmlns:mycat=&quot;http://io.mycat/&quot;&gt;
+  &lt;schema name=&quot;USERDB&quot; checkSQLschema=&quot;true&quot; sqlMaxLimit=&quot;100&quot; dataNode=&quot;dn
+   1&quot;&gt;&lt;/schema&gt;
+  &lt;dataNode name=&quot;dn1&quot; dataHost=&quot;localhost1&quot; database=&quot;test&quot; /&gt;
+  &lt;dataHost name=&quot;localhost1&quot; maxCon=&quot;1000&quot; minCon=&quot;10&quot; balance=&quot;3&quot; dbType=
+   &quot;mysql&quot; dbDriver=&quot;native&quot; writeType=&quot;0&quot; switchType=&quot;1&quot; slaveThreshold=&quot;10
+  0&quot;&gt;
+  &lt;heartbeat&gt;select user()&lt;/heartbeat&gt;
+  &lt;writeHost host=&quot;192.168.137.102&quot; url=&quot;192.168.137.102:3306&quot; user=&quot;root&quot; p
+   assword=&quot;123456&quot;&gt;
+  &lt;readHost host=&quot;192.168.137.103&quot; url=&quot;192.168.137.103:3306&quot; user=&quot;root&quot; pa
+   ssword=&quot;123456&quot; /&gt;
+  &lt;/writeHost&gt;
+ &lt;/dataHost&gt;
+&lt;/mycat:schema&gt;
+[root@node1 ~]# chown root:root /usr/local/mycat/conf/schema.xml
+</code></pre>
+<p>重要配置项含义如下。</p>
+<ul>
+<li>sqlMaxLimit： 配置默认查询数量。</li>
+<li>database： 为真实数据库名。</li>
+<li>balance&#x3D;”0”： 不开启读写分离机制， 所有读操作都发送到当前可⽤的 writeHost 上。</li>
+<li>balance&#x3D;”1”： 全部的 readHost 与 stand by writeHost 参与 select 语句的负载均衡， 简单来说，当双主双从模式（M1-&gt;S1， M2-&gt;S2， 并且 M1 与 M2 互为主备） ， 正常情况下， M2、S1、S2 都参与 select 语句的负载均衡。</li>
+<li>balance&#x3D;”2”： 所有读操作都随机的在 writeHost、 readhost 上分发。</li>
+<li>balance&#x3D;”3”： 所有读请求随机地分发到 wiriterHost 对应的 readhost 执⾏， writerHost不负担读压⼒， 注意 balance&#x3D;3 只在 1.4 及其以后版本有， 1.3 版本没有。</li>
+<li>writeType&#x3D;”0”： 所有写操作发送到配置的第⼀个 writeHost， 第⼀个挂了需要切换到还 ⽣ 存 的第 ⼆ 个 writeHost ， 重 新 启 动 后 已 切 换 后 的 为 准 ， 切 换 记 录 在 配 置 ⽂ 件dnindex.properties 中。</li>
+<li>writeType&#x3D;”1”： 所有写操作都随机的发送到配置的 writeHost。</li>
+</ul>
+<h2 id="配置⽤户访问规则"><a href="#配置⽤户访问规则" class="headerlink" title="配置⽤户访问规则"></a>配置⽤户访问规则</h2><p>修改server.xml ⽂件中root ⽤户的访问密码与数据库，密码设置为 <strong>123456</strong>， 访问 Mycat 的逻辑库为USERDB。</p>
+<pre><code class="xml">[root@node1 ~]# vi /usr/local/mycat/conf/server.xml
+......
+### 保留该部分以上内容，修改以下内容
+&lt;user name=&quot;root&quot;&gt;
+&lt;property name=&quot;password&quot;&gt;123456&lt;/property&gt;
+&lt;property name=&quot;schemas&quot;&gt;USERDB&lt;/property&gt;
+
+### 删除以下内容
+&lt;user name=&quot;user&quot;&gt;
+&lt;property name=&quot;password&quot;&gt;user&lt;/property&gt;
+&lt;property name=&quot;schemas&quot;&gt;TESTDB&lt;/property&gt;
+&lt;property name=&quot;readOnly&quot;&gt;true&lt;/property&gt;
+&lt;/user&gt;
+</code></pre>
+<h1 id="运⾏MyCAT"><a href="#运⾏MyCAT" class="headerlink" title="运⾏MyCAT"></a>运⾏MyCAT</h1><p>通过命令启动 Mycat 数据库中间件服务， 启动后使⽤ ss -nltp 命令查看虚拟机端⼝开放情况， 如果有开放 <strong>8066</strong> 和 <strong>9066</strong> 端⼝， 则表示 Mycat 服务启动成功。</p>
+<p>Mycat服务默认的数据端⼝是<strong>8066</strong>，⽽<strong>9066</strong>端⼝则是Mycat管理端⼝，⽤于管理Mycat的整个集群状态。</p>
+<pre><code class="shell">[root@node1 ~]# /usr/local/mycat/bin/mycat start
+Starting Mycat-server...
+[root@node1 ~]# ss -nltp
+State Recv-Q Send-Q Local Address:Port Peer Addre
+ss:Port
+LISTEN 0 128 *:80 *:* users:((&quot;nginx&quot;,pid=9852,fd=6),(&quot;nginx&quot;,pid=9359,fd=6))
+LISTEN 0 128 *:22 *:* users:((&quot;sshd&quot;,pid=872,fd=3))
+LISTEN 0 100 127.0.0.1:25 *:* users:((&quot;master&quot;,pid=1033,fd=13))
+LISTEN 0 1 127.0.0.1:32000 *:* users:((&quot;java&quot;,pid=16043,fd=4))
+LISTEN 0 100 [::]:9066 [::]:* users:((&quot;java&quot;,pid=16043,fd=74))
+LISTEN 0 50 [::]:34986 [::]:* users:((&quot;java&quot;,pid=16043,fd=58))
+LISTEN 0 128 [::]:80 [::]:* users:((&quot;nginx&quot;,pid=9852,fd=7),(&quot;nginx&quot;,pid=9359,fd=7))
+LISTEN 0 50 [::]:45811 [::]:* users:((&quot;java&quot;,pid=16043,fd=56))
+LISTEN 0 128 [::]:22 [::]:* users:((&quot;sshd&quot;,pid=872,fd=4))
+LISTEN 0 100 [::1]:25 [::]:* users:((&quot;master&quot;,pid=1033,fd=14))
+LISTEN 0 50 [::]:1984 [::]:* users:((&quot;java&quot;,pid=16043,fd=57))
+LISTEN 0 100 [::]:8066 [::]:* users:((&quot;java&quot;,pid=16043,fd=78))
+</code></pre>
+<h2 id="如果不能正常启动服务可查看mycat⽇志"><a href="#如果不能正常启动服务可查看mycat⽇志" class="headerlink" title="如果不能正常启动服务可查看mycat⽇志"></a>如果不能正常启动服务可查看mycat⽇志</h2><pre><code class="shell">[root@node1 ~]# cat /usr/local/mycat/logs/wrapper.log
+</code></pre>
+<h2 id="验证读写分离"><a href="#验证读写分离" class="headerlink" title="验证读写分离"></a>验证读写分离</h2><p>mycat可以认为是⼀个MySQL服务器，对主从两个节点的操作，可以简单认为是对mycat节点的操作。</p>
+<p>根据前⾯的配置，操作主从节点的test数据库，相当于对mycat节点的USERDB数据库进⾏操作。</p>
+<p>可以通过MySQL命令⾏登录数据端⼝（<strong>8066</strong>）执⾏相应的数据操作SQL语句进⾏管理，也可以通过</p>
+<p>MySQL命令⾏登录管理端⼝（<strong>9066</strong>）执⾏相应的管理SQL语句进⾏管理，也可以通过JDBC⽅式进⾏远</p>
+<p>程连接管理。</p>
+<pre><code class="mysql">### 安装mariadb客户端
+[root@node1 ~]# yum install -y mariadb
+
+### 连接mycat服务器，操作USERDB逻辑库
+[root@node1 ~]# mysql -h127.0.0.1 -P8066 -uroot -p123456
+Welcome to the MariaDB monitor. Commands end with ; or \g.
+Your MySQL connection id is 1
+Server version: 5.6.29-mycat-1.6-RELEASE-20161028204710 MyCat Server (Open
+CloundDB)
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+Type &#39;help;&#39; or &#39;\h&#39; for help. Type &#39;\c&#39; to clear the current input statem
+ent.
+MySQL [(none)]&gt; show databases;
++----------+
+| DATABASE |
++----------+
+| USERDB   |        ###数据库提前创建好了
++----------+
+1 row in set (0.00 sec)
+MySQL [(none)]&gt; use USERDB;
+Reading table information for completion of table and column names
+You can turn off this feature to get a quicker startup with -A
+Database changed
+MySQL [USERDB]&gt; show tables;
++----------------+
+| Tables_in_test |
++----------------+
+| company        |
++----------------+
+1 row in set (0.00 sec)
+MySQL [USERDB]&gt; select * from company;
++----+----------+------+
+| id | name     | addr |
++----+----------+------+
+| 1  | facebook | usa  |
++----+----------+------+
+1 row in set (0.04 sec)
+MySQL [USERDB]&gt; insert into company values(2,&quot;bastetball&quot;,&quot;usa&quot;);
+Query OK, 1 row affected (0.01 sec)
+</code></pre>
+<p>通过 show @@datasource; 语句可查询数据库读写操作的分离信息。<br>*  所有的写操作 WRITE_LOAD 数都在 192.168.137.102 主数据库节点上。<br>*  所有的读取操作READ_LOAD 数都在 192.168.137.103 主数据库节点上。<br>由此可⻅， 数据库读写操作已经分离到192.168.137.102 和192.168.137.103节点上了。</p>
+<pre><code class="shell"># 查看mycat的数据源
+[root@node1 ~]# mysql -h127.0.0.1 -P9066 -uroot -p123456 -e &#39;show @@datasource;&#39;
++----------+-----------------+-------+-----------------+------+------+--------+
+------+------+---------+-----------+------------+
+| DATANODE | NAME | TYPE | HOST | PORT | W/R | ACTIVE | IDLE | SIZE | EXECUTE | 
+READ_LOAD | WRITE_LOAD |
++----------+-----------------+-------+-----------------+------+------+--------+-
+-----+------+---------+-----------+------------+
+| dn1 | 192.168.137.102 | mysql | 192.168.137.102 | 3306 | W | 0 | 10 | 1000 | 67 | 0  | 1 |
+| dn1 | 192.168.137.103 | mysql | 192.168.137.103 | 3306 | R | 0 | 6  | 1000 | 72 | 11 | 0 |
++----------+-----------------+-------+-----------------+------+------+-----
+</code></pre>
+</div><div class="article_tags"><span> <i class="yufont icon-tag"></i> 标签: </span><a href="/tags/mycat-linux/">mycat linux</a></div></article><div class="article-copyright"><p>标题: <a href="/2023/03/11/Mycat%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB/">mycat读写分离</a></p><p> 链接: <a href="/2023/03/11/Mycat%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB/">https://zhiyong0389.github.io/2023/03/11/Mycat%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB/</a></p><p> 版权声明: 若无特殊标注皆为 智勇 原创版权, 转载请以链接形式注明作者及原始出处</p><p>最后编辑时间: 2023-03-12</p></div><div class="page_turning"><a class="page_up" href="/2023/03/11/Helm/"
+  style="background-image:url(/assets/images/random/35.jpg)">
+  <div class="inner"><span>上一篇:</span>
+    <p>helm学习笔记</p>
+  </div>
+</a>
+<a class="page_down" href="/2023/03/11/helm-install-wordpress/"
+style="background-image:url(https://help-static-aliyun-doc.aliyuncs.com/assets/img/zh-CN/4780208061/p200143.png" alt="36)">
+<div class="inner"><span>下一篇:</span>
+  <p>helm安装WordPress</p>
+</div>
+</a>
+</div></div></div><div class="article_sidebar left"><div class="author_sidebar sidebar_container"><div class="author_info"><div class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/></div><div class="author_name"><h3><a href="/about">智勇</a></h3><p>不断学习，不断提升！</p></div></div><div class="author_data"><ul><li> <div> <span>34</span><p>文章</p></div></li><li> <div> <span>0</span><p>分类</p></div></li><li> <div> <span>15</span><p>标签</p></div></li></ul></div></div><div class="catalogue sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-feiji"></i>目录</h3><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%87%86%E5%A4%87%E5%B7%A5%E4%BD%9C"><span class="toc-number">1.</span> <span class="toc-text">准备工作</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85JDK"><span class="toc-number">2.</span> <span class="toc-text">安装JDK</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85MyCAT"><span class="toc-number">3.</span> <span class="toc-text">安装MyCAT</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%85%8D%E7%BD%AEMyCAT%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB"><span class="toc-number">4.</span> <span class="toc-text">配置MyCAT读写分离</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB%E8%A7%84%E5%88%99"><span class="toc-number">4.1.</span> <span class="toc-text">配置读写分离规则</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE%E2%BD%A4%E6%88%B7%E8%AE%BF%E9%97%AE%E8%A7%84%E5%88%99"><span class="toc-number">4.2.</span> <span class="toc-text">配置⽤户访问规则</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%BF%90%E2%BE%8FMyCAT"><span class="toc-number">5.</span> <span class="toc-text">运⾏MyCAT</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A6%82%E6%9E%9C%E4%B8%8D%E8%83%BD%E6%AD%A3%E5%B8%B8%E5%90%AF%E5%8A%A8%E6%9C%8D%E5%8A%A1%E5%8F%AF%E6%9F%A5%E7%9C%8Bmycat%E2%BD%87%E5%BF%97"><span class="toc-number">5.1.</span> <span class="toc-text">如果不能正常启动服务可查看mycat⽇志</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%AA%8C%E8%AF%81%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB"><span class="toc-number">5.2.</span> <span class="toc-text">验证读写分离</span></a></li></ol></li></ol></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-24gl-folderOpen"></i>分类</h3><div class="archive_lists"><ul class="category-list"></ul></div></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-tag"></i>标签</h3><a href="/tags/Kubernetes/" style="font-size: 18.67px;">Kubernetes</a> <a href="/tags/ServiceMesh/" style="font-size: 16px;">ServiceMesh</a> <a href="/tags/helm-kubernetes/" style="font-size: 16px;">helm kubernetes</a> <a href="/tags/helm-k8s/" style="font-size: 17.33px;">helm,k8s</a> <a href="/tags/hexo-github%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" style="font-size: 20px;">hexo+github搭建博客</a> <a href="/tags/kubernetes/" style="font-size: 17.33px;">kubernetes</a> <a href="/tags/linux/" style="font-size: 17.33px;">linux</a> <a href="/tags/mycat-linux/" style="font-size: 16px;">mycat linux</a> <a href="/tags/mysql/" style="font-size: 16px;">mysql</a> <a href="/tags/openstack/" style="font-size: 17.33px;">openstack</a> <a href="/tags/openstack-%E4%BA%91%E8%AE%A1%E7%AE%97/" style="font-size: 17.33px;">openstack 云计算</a> <a href="/tags/springcloud-java/" style="font-size: 16px;">springcloud java</a> <a href="/tags/springcloud-java-%E5%BE%AE%E6%9C%8D%E5%8A%A1/" style="font-size: 16px;">springcloud java 微服务</a> <a href="/tags/zookeeper-Hadoop/" style="font-size: 16px;">zookeeper Hadoop</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93-mysql/" style="font-size: 16px;">数据库 mysql</a></div></div></div><footer class="footer"> <div class="footer_bottom"><div class="footer_box"><div class="copy"><span>主题</span><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn">Hexo</a><span>模板</span><a href="/">智勇</a></div><div class="copy"><span>© 2023<a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/#/Integrated/index">豫ICP备2023014079号-1</a></span></div></div></div></footer><html><head></head><body><span id="span"></span><script type="text/javascript">function runtime(){
+        // 初始时间，日/月/年 时:分:秒
+        X = new Date("01/01/2023 8:32:00");
+        Y = new Date();
+        T = (Y.getTime()-X.getTime());
+        M = 24*60*60*1000;
+        a = T/M;
+        A = Math.floor(a);
+        b = (a-A)*24;
+        B = Math.floor(b);
+        c = (b-B)*60;
+        C = Math.floor((b-B)*60);
+        D = Math.floor((c-C)*60);
+        //信息写入到DIV中
+        span.innerHTML = "本站勉强运行: "+A+"天"+B+"小时"+C+"分"+D+"秒"
+    }
+    setInterval(runtime, 1000);
+</script></body></html><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"> </script><script src="/assets/lib/prettify/prettify.js"> </script><script src="/assets/lib/fancybox/fancybox.js"> </script><script src="/assets/js/app.js"> </script></div></body></html>
