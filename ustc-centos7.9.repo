@@ -1,0 +1,5 @@
+[centos7.9]
+name=centos7.9
+baseurl=https://mirrors.ustc.edu.cn/centos/7.9.2009/os/x86_64/
+gpgcheck=0
+enabled=1
