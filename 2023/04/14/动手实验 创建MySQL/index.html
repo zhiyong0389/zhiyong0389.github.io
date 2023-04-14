@@ -1,0 +1,57 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="shortcut icon" href="/assets/imgs/favicon.ico" type="image/x-icon"><title>AWS动手实验 创建MySQL | 智勇</title><meta name="keywords" content="AWS"><meta name="keywords" content="记录个人学习生活"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_3435803_wadmwlqwhps.css"><link rel="stylesheet" href="/style/index.css"><link rel="stylesheet" href="/assets/lib/prettify/prettify.css"><link rel="stylesheet" href="/assets/lib/fancybox/fancybox.css"><meta name="generator" content="Hexo 6.3.0"></head><body><div id="app"><header class="header yu13_p_30" id="header"><div class="header_left"><h1 class="yu13_logo"><a id="logo" href="/">智勇</a></h1></div><div class="header_right"><div class="header_search yu13_cursor yu13_hover" id="search"><i class="yufont icon-sousuo"></i></div><div class="line yu13_p_10"></div><nav class="header_nav"><ul class="nav"><li class="menu_nav"><a href="/"><i class="fas"></i><span> 首页</span></a></li><li class="menu_nav"><a href="/archives"><i class="fas"></i><span> 归档</span></a></li><li class="menu_nav"><a href="/categorys"><i class="fas"></i><span> 分类</span></a></li><li class="menu_nav"><a href="/tags"><i class="fas"></i><span> 标签</span></a></li><li class="menu_nav"><a href="/links"><i class="fas"></i><span> 友情链接</span></a></li></ul></nav></div></header><div class="article_topbg" style="background-image: url('/assets/imgs/top_bg.jpg')"><div class="topbg_container"><h1 class="title">AWS动手实验 创建MySQL</h1><div class="info"><div class="article_meta"><div class="left"><span class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/><a href="/about">智勇</a></span><span><i class="yufont icon-yingyong"></i><span>暂无分类</span></span><span><i class="yufont icon-rili"></i>2023-4-14</span></div></div></div></div></div><div class="container log_container clearfix"><div class="article_content left"> <div class="article_main"><article class="content"><div class="content_text article_text"> <p>实验目的<br>启动Amazon RDS数据库<br>配置Amazon RDS数据库<br>连接至Amazon RDS数据库</p>
+<p>实验要求<br>熟悉基本的Linux服务器管理，<br>熟悉使用Linux命令行工具<br>熟悉数据库的连接方式</p>
+<p>实验原理<br>如何在应用程序中使用Amazon关系数据库服务(Amazon RDS)。任何使用关系型数据库(如MySQL、SQL Server、Oracle或PostgreSQL)的应用程序都可以使用Amazon RDS作为可伸缩的可靠数据库。</p>
+<p>实验步骤<br>一.准备工作：<br>1.本次实验需要在宁夏区域进行操作。先将区域切换到宁夏区域。操作如下:<br><img src="http://cloud.cstor.cn/static/upload/exp/1630481077858_admin_region-nx.png"></p>
+<p>二.创建MySQL数据库<br>1.创建数据库子网组<br>1-1.打开RDS控制台：<br><img src="http://cloud.cstor.cn/static/upload/exp/1561015313968_teacher_image.png"></p>
+<p>1-2.在导航窗格中，选择子网组，选择“创建子网组”，如下：<br><img src="http://cloud.cstor.cn/static/upload/exp/1561015328526_teacher_image.png"></p>
+<p>1-3.对于名称，键入数据库子网组的名称：cstor-subnetgroup-1</p>
+<p>1-4.对于描述，键入数据库子网组的描述：cstor-subnetgroup-description。</p>
+<p>1-5.对于VPC，选择已创建的VPC：cstor，如下：</p>
+<p><img src="http://cloud.cstor.cn/static/upload/exp/1561015371827_teacher_image.png"></p>
+<p>1-6.在添加子网部分，选择您的MySQL数据库需要放在哪两个AZ中（最少选择两个）。<br><img src="http://cloud.cstor.cn/static/upload/exp/1561015382297_teacher_image.png"></p>
+<p>1-7.选择“创建”，完成创建。</p>
+<p>2.启动MySQL数据库实例<br>2-1.打开RDS控制面板，选择“创建数据库”，如下：<br><img src="http://cloud.cstor.cn/static/upload/exp/1561015417184_teacher_image.png"></p>
+<p>2-2.在下面所示的“引擎选项”中选择MySQL，然后选择下一步：<br><img src="/%22http:/cloud.cstor.cn/static/upload/exp/1659241225913_admin_image.png"></p>
+<p>2-3.版本保持默认，模板选择“开发&#x2F;测试”。<br><img src="http://cloud.cstor.cn/static/upload/exp/1659241529876_admin_image.png"></p>
+<p>2-4.在”设置”块，设置以下值：<br> 数据库实例标识符：cstor-MySQL-one<br> 用户名：root<br> 主密码：（自定义）<br> 确认密码：（重新输入密码）<br><img src="http://cloud.cstor.cn/static/upload/exp/1659241548859_admin_image.png"></p>
+<p>2-5.数据库实例类：db.t2.micro<br><img src="http://cloud.cstor.cn/static/upload/exp/1659241565472_admin_image.png"></p>
+<p>2-6.存储:<br> 存储类型：通用型(SSD)<br> 分配的存储空间：20GiB<br> 存储自动扩展: 保持默认<br><img src="http://cloud.cstor.cn/static/upload/exp/1659241578636_admin_image.png"></p>
+<p>2-7. 多可用区部署：请勿创建备用实例<br><img src="http://cloud.cstor.cn/static/upload/exp/1659241588487_admin_image.png"></p>
+<p>2-8. 在“连接”块中设置以下值：<br> Virtual Private Cloud(VPC):选择具有公有子网和私有子网的现有VPC<br>注意：VPC的子网必须位于不同的可用区<br> 子网组：选择刚刚创建的子网组（cstor-subnetgroup-1）<br> 公开可用性：否<br> 可用区：无首选项<br> VPC安全组：新建一个安全组（开放3306端口）<br><img src="http://cloud.cstor.cn/static/upload/exp/1659241608920_admin_image.png"><br><img src="http://cloud.cstor.cn/static/upload/exp/1659241614666_admin_image.png"></p>
+<p>2-9.数据库身份验证: 密码身份验证<br><img src="http://cloud.cstor.cn/static/upload/exp/1659241664751_admin_image.png"></p>
+<p>2-10.其他配置:<br>初始数据库名称：cstorfs<br>启用增强监控: 否<br><img src="http://cloud.cstor.cn/static/upload/exp/1660538491648_admin_image.png"><br><img src="http://cloud.cstor.cn/static/upload/exp/1660538496884_admin_image.png"><br>保留其它选项的默认设置。</p>
+<p>2-11.要创建Amazon RDS MySQL数据库实例，请选择“创建数据库”，如下：<br><img src="http://cloud.cstor.cn/static/upload/exp/1659241738354_admin_image.png"></p>
+<p>3-1.点击数据库标识符,以查看RDS MySQL数据库实例。<br><img src="http://cloud.cstor.cn/static/upload/exp/1659241753313_admin_image.png"></p>
+<p>3-2.等待数据库实例的“数据库实例状态”显示为“可用”（available）。然后滚动到下面所示的“连接”部分。<br><img src="http://cloud.cstor.cn/static/upload/exp/1659241788159_admin_image.png"><br>记下数据库实例的“终端节点”。您将使用这些信息连接到Amazon RDS MySQL。</p>
+<p>实验结果<br>1.创建的MySQL是可用的<br><img src="http://cloud.cstor.cn/static/upload/exp/1659241843345_admin_image.png"></p>
+<p>2.能够连接上MySQL数据库(创建一个EC2实例连接上去)<br>yum update -y &amp;&amp; yum install -y mysql<br>mysql -h &lt;终端节点&gt; -u root -p&lt;密码&gt;<br><img src="http://cloud.cstor.cn/static/upload/exp/1659241880036_admin_image.png"></p>
+</div><div class="article_tags"><span> <i class="yufont icon-tag"></i> 标签: </span><a href="/tags/AWS/">AWS</a></div></article><div class="article-copyright"><p>标题: <a href="/2023/04/14/%E5%8A%A8%E6%89%8B%E5%AE%9E%E9%AA%8C%20%E5%88%9B%E5%BB%BAMySQL/">AWS动手实验 创建MySQL</a></p><p> 链接: <a href="/2023/04/14/%E5%8A%A8%E6%89%8B%E5%AE%9E%E9%AA%8C%20%E5%88%9B%E5%BB%BAMySQL/">https://zhiyong0389.github.io/2023/04/14/%E5%8A%A8%E6%89%8B%E5%AE%9E%E9%AA%8C%20%E5%88%9B%E5%BB%BAMySQL/</a></p><p> 版权声明: 若无特殊标注皆为 智勇 原创版权, 转载请以链接形式注明作者及原始出处</p><p>最后编辑时间: 2023-04-14</p></div><div class="page_turning"><a class="page_up" href="/2023/04/14/%E5%8A%A8%E6%89%8B%E5%AE%9E%E9%AA%8C%20%E5%88%9B%E5%BB%BAS3%E5%AD%98%E5%82%A8%E6%A1%B6/"
+  style="background-image:url(http://cloud.cstor.cn/static/upload/exp/1563609258929_worldskills_image.png)">
+  <div class="inner"><span>上一篇:</span>
+    <p>AWS动手实验 创建S3存储桶</p>
+  </div>
+</a>
+<a class="page_down" href="/2023/04/14/%E5%8A%A8%E6%89%8B%E5%AE%9E%E9%AA%8C%20%E5%88%9B%E5%BB%BAMemcached/"
+style="background-image:url(http://cloud.cstor.cn/static/upload/exp/1630481077858_admin_region-nx.png)">
+<div class="inner"><span>下一篇:</span>
+  <p>动手实验 创建Memcached</p>
+</div>
+</a>
+</div></div></div><div class="article_sidebar left"><div class="author_sidebar sidebar_container"><div class="author_info"><div class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/></div><div class="author_name"><h3><a href="/about">智勇</a></h3><p>不断学习，不断提升！</p></div></div><div class="author_data"><ul><li> <div> <span>46</span><p>文章</p></div></li><li> <div> <span>0</span><p>分类</p></div></li><li> <div> <span>16</span><p>标签</p></div></li></ul></div></div><div class="catalogue sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-feiji"></i>目录</h3></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-24gl-folderOpen"></i>分类</h3><div class="archive_lists"><ul class="category-list"></ul></div></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-tag"></i>标签</h3><a href="/tags/AWS/" style="font-size: 20px;">AWS</a> <a href="/tags/Kubernetes/" style="font-size: 18px;">Kubernetes</a> <a href="/tags/ServiceMesh/" style="font-size: 16px;">ServiceMesh</a> <a href="/tags/helm-kubernetes/" style="font-size: 16px;">helm kubernetes</a> <a href="/tags/helm-k8s/" style="font-size: 17px;">helm,k8s</a> <a href="/tags/hexo-github%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" style="font-size: 19px;">hexo+github搭建博客</a> <a href="/tags/kubernetes/" style="font-size: 19px;">kubernetes</a> <a href="/tags/linux/" style="font-size: 17px;">linux</a> <a href="/tags/mycat-linux/" style="font-size: 16px;">mycat linux</a> <a href="/tags/mysql/" style="font-size: 16px;">mysql</a> <a href="/tags/openstack/" style="font-size: 17px;">openstack</a> <a href="/tags/openstack-%E4%BA%91%E8%AE%A1%E7%AE%97/" style="font-size: 17px;">openstack 云计算</a> <a href="/tags/springcloud-java/" style="font-size: 16px;">springcloud java</a> <a href="/tags/springcloud-java-%E5%BE%AE%E6%9C%8D%E5%8A%A1/" style="font-size: 16px;">springcloud java 微服务</a> <a href="/tags/zookeeper-Hadoop/" style="font-size: 16px;">zookeeper Hadoop</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93-mysql/" style="font-size: 16px;">数据库 mysql</a></div></div></div><footer class="footer"> <div class="footer_bottom"><div class="footer_box"><div class="copy"><span>主题</span><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn">Hexo</a><span>模板</span><a href="/">智勇</a></div><div class="copy"><span>© 2023<a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/#/Integrated/index">豫ICP备2023014079号-1</a></span></div></div></div></footer><html><head></head><body><span id="span"></span><script type="text/javascript">function runtime(){
+        // 初始时间，日/月/年 时:分:秒
+        X = new Date("01/01/2023 8:32:00");
+        Y = new Date();
+        T = (Y.getTime()-X.getTime());
+        M = 24*60*60*1000;
+        a = T/M;
+        A = Math.floor(a);
+        b = (a-A)*24;
+        B = Math.floor(b);
+        c = (b-B)*60;
+        C = Math.floor((b-B)*60);
+        D = Math.floor((c-C)*60);
+        //信息写入到DIV中
+        span.innerHTML = "本站勉强运行: "+A+"天"+B+"小时"+C+"分"+D+"秒"
+    }
+    setInterval(runtime, 1000);
+</script></body></html><script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"> </script><script src="/assets/lib/prettify/prettify.js"> </script><script src="/assets/lib/fancybox/fancybox.js"> </script><script src="/assets/js/app.js"> </script></div></body></html>
