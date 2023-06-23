@@ -1,0 +1,209 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="shortcut icon" href="/assets/imgs/favicon.ico" type="image/x-icon"><title>Markdown基础语法（typora为例） | 智勇</title><meta name="keywords" content="云计算 云原生 私有云 容器云"><meta name="keywords" content="记录个人学习生活"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_3435803_wadmwlqwhps.css"><link rel="stylesheet" href="/style/index.css"><link rel="stylesheet" href="/assets/lib/prettify/prettify.css"><link rel="stylesheet" href="/assets/lib/fancybox/fancybox.css"><meta name="generator" content="Hexo 6.3.0"></head><body><div id="app"><header class="header yu13_p_30" id="header"><div class="header_left"><h1 class="yu13_logo"><a id="logo" href="/">智勇</a></h1></div><div class="header_right"><div class="header_search yu13_cursor yu13_hover" id="search"><i class="yufont icon-sousuo"></i></div><div class="line yu13_p_10"></div><nav class="header_nav"><ul class="nav"><li class="menu_nav"><a href="/"><i class="fas"></i><span> 首页</span></a></li><li class="menu_nav"><a href="/archives"><i class="fas"></i><span> 归档</span></a></li><li class="menu_nav"><a href="/categorys"><i class="fas"></i><span> 分类</span></a></li><li class="menu_nav"><a href="/tags"><i class="fas"></i><span> 标签</span></a></li><li class="menu_nav"><a href="/links"><i class="fas"></i><span> 友情链接</span></a></li></ul></nav></div></header><div class="article_topbg" style="background-image: url('/assets/imgs/top_bg.jpg')"><div class="topbg_container"><h1 class="title">Markdown基础语法（typora为例）</h1><div class="info"><div class="article_meta"><div class="left"><span class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/><a href="/about">智勇</a></span><span><i class="yufont icon-yingyong"></i><span>暂无分类</span></span><span><i class="yufont icon-rili"></i>2023-2-5</span></div></div></div></div></div><div class="container log_container clearfix"><div class="article_content left"> <div class="article_main"><article class="content"><div class="content_text article_text"> <h1 id="Markdown基础语法（typora为例）"><a href="#Markdown基础语法（typora为例）" class="headerlink" title="Markdown基础语法（typora为例）"></a>Markdown基础语法（typora为例）</h1><h2 id="1、代码块"><a href="#1、代码块" class="headerlink" title="1、代码块:"></a>1、代码块:</h2><pre><code class="shell">// 代码块语法
+​```Java(语言类型)
+    
+    
+    
+​```shell
+</code></pre>
+<p><strong>1.1.java代码块</strong></p>
+<pre><code class="java">public class HelloWorld &#123;
+    public static void main(String []args) &#123;
+        System.out.println(&quot;Hello,World!&quot;);
+    &#125;
+&#125;
+</code></pre>
+<p><strong>1.2.shell脚本代码块</strong></p>
+<pre><code class="shell"># !/bin/bash  # 脚本生成一个 100 以内的随机数,提示用户猜数字,根据用户的输入,提示用户猜对了,
+# 猜小了或猜大了,直至用户猜对脚本结束。
+# RANDOM 为系统自带的系统变量,值为 0‐32767的随机数
+# 使用取余算法将随机数变为 1‐100 的随机数num=$[RANDOM%100+1]echo &quot;$num&quot; 
+# 使用 read 提示用户猜数字
+# 使用 if 判断用户猜数字的大小关系:‐eq(等于),‐ne(不等于),‐gt(大于),‐ge(大于等于),
+# ‐lt(小于),‐le(小于等于)
+
+while :
+  do     
+    read -p &quot;计算机生成了一个 1‐100 的随机数,你猜: &quot; cai    
+    if [ $cai -eq $num ]    
+    then        
+        echo &quot;恭喜,猜对了&quot;           
+        exit        
+    elif [ $cai -gt $num ]       
+    then            
+        echo &quot;Oops,猜大了&quot;         
+    else            
+        echo &quot;Oops,猜小了&quot;     
+    fi
+  done
+
+</code></pre>
+<h2 id="2、标题："><a href="#2、标题：" class="headerlink" title="2、标题："></a>2、标题：</h2><pre><code class="powershell">// 标题语法
+
+# 1级标题
+## 2级标题
+### 3级标题
+#### 4级标题
+##### 5级标题
+###### 6级标题
+    
+！**注意：&#39;#&#39;与标题之间需要空格隔开**
+</code></pre>
+<h1 id="1级标题"><a href="#1级标题" class="headerlink" title="1级标题"></a>1级标题</h1><h2 id="2级标题"><a href="#2级标题" class="headerlink" title="2级标题"></a>2级标题</h2><h3 id="3级标题"><a href="#3级标题" class="headerlink" title="3级标题"></a>3级标题</h3><h4 id="4级标题"><a href="#4级标题" class="headerlink" title="4级标题"></a>4级标题</h4><h5 id="5级标题"><a href="#5级标题" class="headerlink" title="5级标题"></a>5级标题</h5><h6 id="6级标题"><a href="#6级标题" class="headerlink" title="6级标题"></a>6级标题</h6><h2 id="3、字体："><a href="#3、字体：" class="headerlink" title="3、字体："></a>3、字体：</h2><pre><code class="powershell">// 加粗
+**你好，世界**
+
+// 代码高亮显示
+==Hello,World!==
+
+// 删除线
+~~被删除的文字~~
+
+// 斜体
+*斜体*
+</code></pre>
+<p>&#x2F;&#x2F; 加粗<br><strong>你好，世界</strong></p>
+<p>&#x2F;&#x2F; 代码高亮显示<br>Hello,World!</p>
+<p>&#x2F;&#x2F; 删除线<br><del>被删除的文字</del></p>
+<p>&#x2F;&#x2F; 斜体<br><em>斜体</em></p>
+<h2 id="4、引用："><a href="#4、引用：" class="headerlink" title="4、引用："></a>4、引用：</h2><pre><code class="powershell">// 引用语法
+&gt;作责：爱因斯坦
+&gt;&gt;作责：爱因斯坦
+&gt;&gt;&gt;作责：爱因斯坦
+
+！！！几个尖括号就代表前面有几条竖线。
+</code></pre>
+<p>&#x2F;&#x2F; 引用语法</p>
+<blockquote>
+<p>作责：爱因斯坦</p>
+<blockquote>
+<p>作责：爱因斯坦</p>
+<blockquote>
+<p>作责：爱因斯坦</p>
+</blockquote>
+</blockquote>
+</blockquote>
+<h2 id="5、分割线："><a href="#5、分割线：" class="headerlink" title="5、分割线："></a>5、分割线：</h2><pre><code class="shell">// 分割线
+方式一：
+---
+
+方式二(此分割线相比方式一较粗，效果如下)：
+***
+</code></pre>
+<p><strong>5.1.方式一的分割线</strong></p>
+<hr>
+<p><strong>5.2.方式二的分割线</strong></p>
+<hr>
+<h2 id="6、图片插入："><a href="#6、图片插入：" class="headerlink" title="6、图片插入："></a>6、图片插入：</h2><pre><code class="shell">// 在线图片/本地图片
+![图片名称](/dir/.../..) --图片插入方式(路径为：在线图片连接/本地图片绝对路径)
+</code></pre>
+<p><img src="https://i.328888.xyz/2023/01/28/jCai3.png" alt="demo"></p>
+<h2 id="7、超链接："><a href="#7、超链接：" class="headerlink" title="7、超链接："></a>7、超链接：</h2><pre><code class="powershell">// 超链接语法
+[超链接名称]()
+</code></pre>
+<p>&#x2F;&#x2F; 超链接语法</p>
+<p>[智勇博客](<a target="_blank" rel="noopener" href="http://zhiyong.rr.nu/">智勇博客)</a></p>
+<h2 id="8、列表："><a href="#8、列表：" class="headerlink" title="8、列表："></a>8、列表：</h2><pre><code class="cmd">// 无序列表
+- 无序列表1
+- 无序列表2
+- 无序列表3
+
+// 有序列表
+1. 有序列表1
+2. 有序列表2
+2. 有序列表3
+
+！**注意：列表符和列表名称之间有空格**
+</code></pre>
+<p>&#x2F;&#x2F; 无序列表</p>
+<ul>
+<li>无序列表1</li>
+<li>无序列表2</li>
+<li>无序列表3</li>
+</ul>
+<p>&#x2F;&#x2F; 有序列表</p>
+<ol>
+<li>有序列表1</li>
+<li>有序列表2</li>
+<li>有序列表3</li>
+</ol>
+<h2 id="9、表格："><a href="#9、表格：" class="headerlink" title="9、表格："></a>9、表格：</h2><pre><code class="cmd">右键-&gt;插入-&gt;表格
+
+或者
+
+| 姓名 | 语文 | 数学 |
+| --- | --- | --- |
+| 张三 | 88 | 99 |
+| 李四 | 99 | 100 |
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>姓名</th>
+<th>语文</th>
+<th>数学</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>张三</td>
+<td>88</td>
+<td>99</td>
+</tr>
+<tr>
+<td>李四</td>
+<td>99</td>
+<td>100</td>
+</tr>
+</tbody></table>
+<h2 id="10、快捷键："><a href="#10、快捷键：" class="headerlink" title="10、快捷键："></a>10、快捷键：</h2><pre><code class="cmd">// 1.Ctrl + Shift + 1(F1下面的按键) =&gt; 调出文件及大纲栏
+
+// 2.Ctrl + / =&gt; 将编辑笔记转换为Markdown编辑语言
+</code></pre>
+<h2 id="11、流程图："><a href="#11、流程图：" class="headerlink" title="11、流程图："></a>11、流程图：</h2><pre><code class="shell">// 流程图代码
+
+​```mermaid
+
+graph LR
+dev(开发)--推送--&gt;git(gitlab)
+ci(jenkins)--拉取--&gt;git
+app1(app服务器)--部署--&gt;ci
+app2(app服务器)--部署--&gt;ci
+app3(app服务器)--部署--&gt;ci
+</code></pre>
+<p>流程图如下:</p>
+<pre><code class="mermaid">graph LR
+dev(开发)--推送--&gt;git(gitlab)
+ci(jenkins)--拉取--&gt;git
+app1(app服务器)--部署--&gt;ci
+app2(app服务器)--部署--&gt;ci
+app3(app服务器)--部署--&gt;ci
+</code></pre>
+<p>本文转自 <a target="_blank" rel="noopener" href="https://www.cnblogs.com/liulia/p/14767877.html">https://www.cnblogs.com/liulia/p/14767877.html</a>，如有侵权，请联系删除。</p>
+</div><div class="article_tags"><span> <i class="yufont icon-tag"></i> 标签: </span></div></article><div class="article-copyright"><p>标题: <a href="/2023/02/05/markdown/">Markdown基础语法（typora为例）</a></p><p> 链接: <a href="/2023/02/05/markdown/">https://zhiyong0389.github.io/2023/02/05/markdown/</a></p><p> 版权声明: 若无特殊标注皆为 智勇 原创版权, 转载请以链接形式注明作者及原始出处</p><p>最后编辑时间: 2023-06-23</p></div><div class="page_turning"><a class="page_up" href="/2023/01/18/k8s-hpa/"
+  style="background-image:url(https://qcloudimg.tencent-cloud.cn/raw/2e380e3078195ab287d3a1d957d58322.png)">
+  <div class="inner"><span>上一篇:</span>
+    <p>根据不同场景调节HPA扩缩容灵敏度</p>
+  </div>
+</a>
+<a class="page_down" href="/2023/02/07/lamp-aliyun/"
+style="background-image:url(https://i.328888.xyz/2023/02/06/rppIC.png" alt="rppIC.png)">
+<div class="inner"><span>下一篇:</span>
+  <p>基于ECS搭建云上个人论坛(使用LAMP)</p>
+</div>
+</a>
+</div></div></div><div class="article_sidebar left"><div class="author_sidebar sidebar_container"><div class="author_info"><div class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/></div><div class="author_name"><h3><a href="/about">智勇</a></h3><p>不断学习，不断提升！</p></div></div><div class="author_data"><ul><li> <div> <span>46</span><p>文章</p></div></li><li> <div> <span>0</span><p>分类</p></div></li><li> <div> <span>16</span><p>标签</p></div></li></ul></div></div><div class="catalogue sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-feiji"></i>目录</h3><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Markdown%E5%9F%BA%E7%A1%80%E8%AF%AD%E6%B3%95%EF%BC%88typora%E4%B8%BA%E4%BE%8B%EF%BC%89"><span class="toc-number">1.</span> <span class="toc-text">Markdown基础语法（typora为例）</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1%E3%80%81%E4%BB%A3%E7%A0%81%E5%9D%97"><span class="toc-number">1.1.</span> <span class="toc-text">1、代码块:</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E3%80%81%E6%A0%87%E9%A2%98%EF%BC%9A"><span class="toc-number">1.2.</span> <span class="toc-text">2、标题：</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#1%E7%BA%A7%E6%A0%87%E9%A2%98"><span class="toc-number">2.</span> <span class="toc-text">1级标题</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#2%E7%BA%A7%E6%A0%87%E9%A2%98"><span class="toc-number">2.1.</span> <span class="toc-text">2级标题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3%E7%BA%A7%E6%A0%87%E9%A2%98"><span class="toc-number">2.1.1.</span> <span class="toc-text">3级标题</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#4%E7%BA%A7%E6%A0%87%E9%A2%98"><span class="toc-number">2.1.1.1.</span> <span class="toc-text">4级标题</span></a><ol class="toc-child"><li class="toc-item toc-level-5"><a class="toc-link" href="#5%E7%BA%A7%E6%A0%87%E9%A2%98"><span class="toc-number">2.1.1.1.1.</span> <span class="toc-text">5级标题</span></a><ol class="toc-child"><li class="toc-item toc-level-6"><a class="toc-link" href="#6%E7%BA%A7%E6%A0%87%E9%A2%98"><span class="toc-number">2.1.1.1.1.1.</span> <span class="toc-text">6级标题</span></a></li></ol></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3%E3%80%81%E5%AD%97%E4%BD%93%EF%BC%9A"><span class="toc-number">2.2.</span> <span class="toc-text">3、字体：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4%E3%80%81%E5%BC%95%E7%94%A8%EF%BC%9A"><span class="toc-number">2.3.</span> <span class="toc-text">4、引用：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5%E3%80%81%E5%88%86%E5%89%B2%E7%BA%BF%EF%BC%9A"><span class="toc-number">2.4.</span> <span class="toc-text">5、分割线：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6%E3%80%81%E5%9B%BE%E7%89%87%E6%8F%92%E5%85%A5%EF%BC%9A"><span class="toc-number">2.5.</span> <span class="toc-text">6、图片插入：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#7%E3%80%81%E8%B6%85%E9%93%BE%E6%8E%A5%EF%BC%9A"><span class="toc-number">2.6.</span> <span class="toc-text">7、超链接：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8%E3%80%81%E5%88%97%E8%A1%A8%EF%BC%9A"><span class="toc-number">2.7.</span> <span class="toc-text">8、列表：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#9%E3%80%81%E8%A1%A8%E6%A0%BC%EF%BC%9A"><span class="toc-number">2.8.</span> <span class="toc-text">9、表格：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#10%E3%80%81%E5%BF%AB%E6%8D%B7%E9%94%AE%EF%BC%9A"><span class="toc-number">2.9.</span> <span class="toc-text">10、快捷键：</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#11%E3%80%81%E6%B5%81%E7%A8%8B%E5%9B%BE%EF%BC%9A"><span class="toc-number">2.10.</span> <span class="toc-text">11、流程图：</span></a></li></ol></li></ol></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-24gl-folderOpen"></i>分类</h3><div class="archive_lists"><ul class="category-list"></ul></div></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-tag"></i>标签</h3><a href="/tags/AWS/" style="font-size: 20px;">AWS</a> <a href="/tags/Kubernetes/" style="font-size: 18px;">Kubernetes</a> <a href="/tags/ServiceMesh/" style="font-size: 16px;">ServiceMesh</a> <a href="/tags/helm-kubernetes/" style="font-size: 16px;">helm kubernetes</a> <a href="/tags/helm-k8s/" style="font-size: 17px;">helm,k8s</a> <a href="/tags/hexo-github%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" style="font-size: 19px;">hexo+github搭建博客</a> <a href="/tags/kubernetes/" style="font-size: 19px;">kubernetes</a> <a href="/tags/linux/" style="font-size: 17px;">linux</a> <a href="/tags/mycat-linux/" style="font-size: 16px;">mycat linux</a> <a href="/tags/mysql/" style="font-size: 16px;">mysql</a> <a href="/tags/openstack/" style="font-size: 17px;">openstack</a> <a href="/tags/openstack-%E4%BA%91%E8%AE%A1%E7%AE%97/" style="font-size: 17px;">openstack 云计算</a> <a href="/tags/springcloud-java/" style="font-size: 16px;">springcloud java</a> <a href="/tags/springcloud-java-%E5%BE%AE%E6%9C%8D%E5%8A%A1/" style="font-size: 16px;">springcloud java 微服务</a> <a href="/tags/zookeeper-Hadoop/" style="font-size: 16px;">zookeeper Hadoop</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93-mysql/" style="font-size: 16px;">数据库 mysql</a></div></div></div><footer class="footer"> <div class="footer_bottom"><div class="footer_box"><div class="copy"><span>主题</span><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn">Hexo</a><span>模板</span><a target="_blank" rel="noopener" href="https://jihulab.com/douzhiyong/hexo-theme-monie">Monie</a></div><div class="copy"><span>© 2023<a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">豫ICP备2023007869号-1</a></span></div></div></div></footer><html><head></head><body><span id="span"></span><script type="text/javascript">function runtime(){
+        // 初始时间，日/月/年 时:分:秒
+        X = new Date("01/01/2023 8:32:00");
+        Y = new Date();
+        T = (Y.getTime()-X.getTime());
+        M = 24*60*60*1000;
+        a = T/M;
+        A = Math.floor(a);
+        b = (a-A)*24;
+        B = Math.floor(b);
+        c = (b-B)*60;
+        C = Math.floor((b-B)*60);
+        D = Math.floor((c-C)*60);
+        //信息写入到DIV中
+        span.innerHTML = "本站勉强运行: "+A+"天"+B+"小时"+C+"分"+D+"秒"
+      }
+      setInterval(runtime, 1000);
+</script></body></html><a target="_blank" href="http://www.freecdn.pw/?zzwz" title="免费云加速（FreeCDN），为您免费提供网站加速和网站防御（DDOS、CC攻击）" alt="免费云加速（FreeCDN），为您免费提供网站加速和网站防御（DDOS、CC攻击）">本站由免费云加速（FreeCDN）提供网站加速和攻击防御服务</a>      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"> </script><script src="/assets/lib/prettify/prettify.js"> </script><script src="/assets/lib/fancybox/fancybox.js"> </script><script src="/assets/js/app.js"> </script></div></body></html>

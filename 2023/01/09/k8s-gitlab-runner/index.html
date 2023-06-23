@@ -1,0 +1,235 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="shortcut icon" href="/assets/imgs/favicon.ico" type="image/x-icon"><title>K8s 部署 Gitlab CI Runner | 智勇</title><meta name="keywords" content="Kubernetes"><meta name="keywords" content="记录个人学习生活"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_3435803_wadmwlqwhps.css"><link rel="stylesheet" href="/style/index.css"><link rel="stylesheet" href="/assets/lib/prettify/prettify.css"><link rel="stylesheet" href="/assets/lib/fancybox/fancybox.css"><meta name="generator" content="Hexo 6.3.0"></head><body><div id="app"><header class="header yu13_p_30" id="header"><div class="header_left"><h1 class="yu13_logo"><a id="logo" href="/">智勇</a></h1></div><div class="header_right"><div class="header_search yu13_cursor yu13_hover" id="search"><i class="yufont icon-sousuo"></i></div><div class="line yu13_p_10"></div><nav class="header_nav"><ul class="nav"><li class="menu_nav"><a href="/"><i class="fas"></i><span> 首页</span></a></li><li class="menu_nav"><a href="/archives"><i class="fas"></i><span> 归档</span></a></li><li class="menu_nav"><a href="/categorys"><i class="fas"></i><span> 分类</span></a></li><li class="menu_nav"><a href="/tags"><i class="fas"></i><span> 标签</span></a></li><li class="menu_nav"><a href="/links"><i class="fas"></i><span> 友情链接</span></a></li></ul></nav></div></header><div class="article_topbg" style="background-image: url('/assets/imgs/top_bg.jpg')"><div class="topbg_container"><h1 class="title">K8s 部署 Gitlab CI Runner</h1><div class="info"><div class="article_meta"><div class="left"><span class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/><a href="/about">智勇</a></span><span><i class="yufont icon-yingyong"></i><span>暂无分类</span></span><span><i class="yufont icon-rili"></i>2023-1-9</span></div></div></div></div></div><div class="container log_container clearfix"><div class="article_content left"> <div class="article_main"><article class="content"><div class="content_text article_text"> <ul>
+<li>K8s 版本：<code>1.20.6</code></li>
+<li>GitLab CI 最大的作用是管理各个项目的构建状态。因此，运行构建任务这种浪费资源的事情交给一个独立的 Gitlab Runner 来做就会好很多，而且 Gitlab Runner 可以安装到不同的机器上</li>
+<li>只要在项目中添加一个<code>.gitlab-ci.yml</code>文件，然后添加一个 Runner ，即可进行持续集成</li>
+<li>官方文档：<a target="_blank" rel="noopener" href="https://docs.gitlab.com/runner/install/">Install GitLab Runner | GitLab</a></li>
+</ul>
+<h2 id="1-介绍"><a href="#1-介绍" class="headerlink" title="1. 介绍"></a>1. 介绍</h2><ul>
+<li><strong>Pipeline</strong>：相当于一次构建任务，里面可以包含多个流程，如安装依赖、运行测试、编译、部署测试服务器、部署生产服务器等。任何提交或者 Merge Request 的合并都可以触发 Pipeline 构建</li>
+<li><strong>Stages</strong>：表示一个构建阶段。一次 Pipeline 中可定义多个 Stages<ul>
+<li>所有 Stages 会顺序运行，即当一个 Stage 完成后，下一个 Stage 才会开始</li>
+<li>只有当所有 Stages 完成后，该构建任务才会成功</li>
+<li>如果任何一个 Stage 失败，那么后面的 Stages 不会执行，该构建任务失败</li>
+</ul>
+</li>
+<li><strong>Jobs</strong>：表示构建工作，即某个 Stage 里面执行的工作。一个 Stage 中可定义多个 Jobs<ul>
+<li>相同 Stage 中的 Jobs 会并行执行</li>
+<li>相同 Stage 中的 Jobs 都执行成功时，该 Stage 才会成功</li>
+<li>如果任何一个 Job 失败，那么该 Stage 失败，即该构建任务失败</li>
+</ul>
+</li>
+<li><strong>Runner</strong>：执行 Gitlab CI 构建任务</li>
+</ul>
+<h2 id="2-Gitlab-Runner"><a href="#2-Gitlab-Runner" class="headerlink" title="2. Gitlab Runner"></a>2. Gitlab Runner</h2><ul>
+<li><strong>gitlab-ci-runner-cm</strong>：Runner 镜像所需环境变量<ul>
+<li>其他选项可在 Pod 中运行<code>gitlab-ci-multi-runner register --help</code>查看</li>
+</ul>
+</li>
+<li><strong>gitlab-ci-token</strong>：存放加密的 Gitlab CI runner token<ul>
+<li><a target="_blank" rel="noopener" href="http://gitlab.south.com/admin/runners">http://gitlab.south.com/admin/runners</a> -&gt; <code>K9Qhf4Sh1T7fqxHSWS5s</code></li>
+</ul>
+</li>
+<li><strong>gitlab-ci-runner-scripts</strong>：一个用于注册、运行和取消注册 Gitlab CI Runner 的脚本<ul>
+<li>只有当 Pod 正常通过 Kubernetes（TERM 信号）终止时，才会触发取消注册。如果强制终止 Pod（SIGKILL 信号），Runner 将不会注销自身，必须手动完成对这种被杀死的 Runner 的清理</li>
+</ul>
+</li>
+<li><strong>gitlab-ci-runner</strong>：Runner 的 StatefulSet 控制器<ul>
+<li>通过 K8s 生命周期钩子：开始运行时取消注册所有的同名 Runner；节点丢失时（即 NodeLost 事件）重新注册自己并开始运行；正常停止 Pod 时运行 unregister 命令来取消自己</li>
+</ul>
+</li>
+</ul>
+<pre><code>apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gitlab-ci
+  namespace: gitlab
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gitlab-ci
+  namespace: gitlab
+rules:
+  - apiGroups: [&quot;&quot;]
+    resources: [&quot;*&quot;]
+    verbs: [&quot;*&quot;]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: gitlab-ci
+  namespace: gitlab
+subjects:
+  - kind: ServiceAccount
+    name: gitlab-ci
+    namespace: gitlab
+roleRef:
+  kind: Role
+  name: gitlab-ci
+  apiGroup: rbac.authorization.k8s.io
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: gitlab-ci-runner
+  name: gitlab-ci-runner-cm
+  namespace: gitlab
+data:
+  REGISTER_NON_INTERACTIVE: &quot;true&quot;
+  REGISTER_LOCKED: &quot;false&quot;
+  METRICS_SERVER: &quot;0.0.0.0:9100&quot;
+  CI_SERVER_URL: &quot;http://gitlab.gitlab.svc.cluster.local/ci&quot;  # *
+  RUNNER_REQUEST_CONCURRENCY: &quot;4&quot;
+  RUNNER_EXECUTOR: &quot;kubernetes&quot;
+  KUBERNETES_NAMESPACE: &quot;gitlab&quot;  # *
+  KUBERNETES_PRIVILEGED: &quot;true&quot;
+  KUBERNETES_CPU_LIMIT: &quot;1&quot;
+  KUBERNETES_MEMORY_LIMIT: &quot;1Gi&quot;
+  KUBERNETES_SERVICE_CPU_LIMIT: &quot;1&quot;
+  KUBERNETES_SERVICE_MEMORY_LIMIT: &quot;1Gi&quot;
+  KUBERNETES_HELPER_CPU_LIMIT: &quot;500m&quot;
+  KUBERNETES_HELPER_MEMORY_LIMIT: &quot;100Mi&quot;
+  KUBERNETES_PULL_POLICY: &quot;if-not-present&quot;
+  KUBERNETES_TERMINATIONGRACEPERIODSECONDS: &quot;10&quot;
+  KUBERNETES_POLL_INTERVAL: &quot;5&quot;
+  KUBERNETES_POLL_TIMEOUT: &quot;360&quot;
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gitlab-ci-token
+  namespace: gitlab
+  labels:
+    app: gitlab-ci-runner
+data:
+  GITLAB_CI_TOKEN: SzlRaGY0U2gxVDdmcXhIU1dTNXMK  # echo K9Qhf4Sh1T7fqxHSWS5s | base64 -w0
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    app: gitlab-ci-runner
+  name: gitlab-ci-runner-scripts
+  namespace: gitlab
+data:
+  run.sh: |
+    #!/bin/bash
+    unregister() &#123;
+        kill %1
+        echo &quot;Unregistering runner $&#123;RUNNER_NAME&#125; ...&quot;
+        /usr/bin/gitlab-ci-multi-runner unregister -t &quot;$(/usr/bin/gitlab-ci-multi-runner list 2&gt;&amp;1 | tail -n1 | awk &#39;&#123;print $4&#125;&#39; | cut -d&#39;=&#39; -f2)&quot; -n $&#123;RUNNER_NAME&#125;
+        exit $?
+    &#125;
+    trap &#39;unregister&#39; EXIT HUP INT QUIT PIPE TERM
+    echo &quot;Registering runner $&#123;RUNNER_NAME&#125; ...&quot;
+    /usr/bin/gitlab-ci-multi-runner register -r $&#123;GITLAB_CI_TOKEN&#125;
+    sed -i &#39;s/^concurrent.*/concurrent = &#39;&quot;$&#123;RUNNER_REQUEST_CONCURRENCY&#125;&quot;&#39;/&#39; /home/gitlab-runner/.gitlab-runner/config.toml
+    echo &quot;Starting runner $&#123;RUNNER_NAME&#125; ...&quot;
+    /usr/bin/gitlab-ci-multi-runner run -n $&#123;RUNNER_NAME&#125; &amp;
+    wait
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: gitlab-ci-runner
+  namespace: gitlab
+  labels:
+    app: gitlab-ci-runner
+spec:
+  updateStrategy:
+    type: RollingUpdate
+  replicas: 2
+  serviceName: gitlab-ci-runner
+  template:
+    metadata:
+      labels:
+        app: gitlab-ci-runner
+    spec:
+      volumes:
+      - name: gitlab-ci-runner-scripts
+        projected:
+          sources:
+          - configMap:
+              name: gitlab-ci-runner-scripts
+              items:
+              - key: run.sh
+                path: run.sh
+                mode: 0755
+      serviceAccountName: gitlab-ci
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        supplementalGroups: [999]
+      containers:
+      - image: gitlab/gitlab-runner:latest
+        name: gitlab-ci-runner
+        command:
+        - /scripts/run.sh
+        envFrom:
+        - configMapRef:
+            name: gitlab-ci-runner-cm
+        - secretRef:
+            name: gitlab-ci-token
+        env:
+        - name: RUNNER_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        ports:
+        - containerPort: 9100
+          name: http-metrics
+          protocol: TCP
+        volumeMounts:
+        - name: gitlab-ci-runner-scripts
+          mountPath: &quot;/scripts&quot;
+          readOnly: true
+      restartPolicy: Always
+</code></pre>
+<p>创建：</p>
+<pre><code>$ kubectl create -f gitlab-runner.yaml
+$ kubectl -n gitlab get pod
+NAME                        READY   STATUS    RESTARTS   AGE
+gitlab-7b894fcff-mnkb4      1/1     Running   0          69m
+gitlab-ci-runner-0          1/1     Running   0          2m
+gitlab-ci-runner-1          1/1     Running   0          2m
+postgresql-6b6b478f-s6nj7   1/1     Running   0          69m
+redis-7db89c7d46-fqdr5      1/1     Running   0          69m
+</code></pre>
+<p>结果：</p>
+<p>在 <a target="_blank" rel="noopener" href="http://gitlab.south.com/admin/runners">http://gitlab.south.com/admin/runners</a> 即可看到两个 Runner 实例</p>
+<hr>
+<p>参考：<a target="_blank" rel="noopener" href="https://www.qikqiak.com/post/gitlab-runner-install-on-k8s/">在 Kubernetes 上安装 Gitlab CI Runner-阳明的博客</a></p>
+<p>本文转自 <a target="_blank" rel="noopener" href="https://www.cnblogs.com/lb477/p/15173133.html">https://www.cnblogs.com/lb477/p/15173133.html</a>，如有侵权，请联系删除。</p>
+</div><div class="article_tags"><span> <i class="yufont icon-tag"></i> 标签: </span><a href="/tags/Kubernetes/">Kubernetes</a></div></article><div class="article-copyright"><p>标题: <a href="/2023/01/09/k8s-gitlab-runner/">K8s 部署 Gitlab CI Runner</a></p><p> 链接: <a href="/2023/01/09/k8s-gitlab-runner/">https://zhiyong0389.github.io/2023/01/09/k8s-gitlab-runner/</a></p><p> 版权声明: 若无特殊标注皆为 智勇 原创版权, 转载请以链接形式注明作者及原始出处</p><p>最后编辑时间: 2023-06-23</p></div><div class="page_turning"><a class="page_up" href="/2023/01/09/hexo-blog-4/"
+  style="background-image:url(https://lyboy6.github.io/blog/2022/09/12/hexo-deploy/github.png)">
+  <div class="inner"><span>上一篇:</span>
+    <p>Hexo + GitHub 搭建个人博客(四) Hexo部署</p>
+  </div>
+</a>
+<a class="page_down" href="/2023/01/12/gitlab-pages/"
+style="background-image:url(https://oscimg.oschina.net/oscnet/52f8c7f53da1ab5708b0c1262b15126a5c2.jpg" alt="52f8c7f53da1ab5708b0c1262b15126a5c2.jpg)">
+<div class="inner"><span>下一篇:</span>
+  <p>本地搭建的GitLab中开启Pages功能</p>
+</div>
+</a>
+</div></div></div><div class="article_sidebar left"><div class="author_sidebar sidebar_container"><div class="author_info"><div class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/></div><div class="author_name"><h3><a href="/about">智勇</a></h3><p>不断学习，不断提升！</p></div></div><div class="author_data"><ul><li> <div> <span>46</span><p>文章</p></div></li><li> <div> <span>0</span><p>分类</p></div></li><li> <div> <span>16</span><p>标签</p></div></li></ul></div></div><div class="catalogue sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-feiji"></i>目录</h3><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E4%BB%8B%E7%BB%8D"><span class="toc-number">1.</span> <span class="toc-text">1. 介绍</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-Gitlab-Runner"><span class="toc-number">2.</span> <span class="toc-text">2. Gitlab Runner</span></a></li></ol></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-24gl-folderOpen"></i>分类</h3><div class="archive_lists"><ul class="category-list"></ul></div></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-tag"></i>标签</h3><a href="/tags/AWS/" style="font-size: 20px;">AWS</a> <a href="/tags/Kubernetes/" style="font-size: 18px;">Kubernetes</a> <a href="/tags/ServiceMesh/" style="font-size: 16px;">ServiceMesh</a> <a href="/tags/helm-kubernetes/" style="font-size: 16px;">helm kubernetes</a> <a href="/tags/helm-k8s/" style="font-size: 17px;">helm,k8s</a> <a href="/tags/hexo-github%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" style="font-size: 19px;">hexo+github搭建博客</a> <a href="/tags/kubernetes/" style="font-size: 19px;">kubernetes</a> <a href="/tags/linux/" style="font-size: 17px;">linux</a> <a href="/tags/mycat-linux/" style="font-size: 16px;">mycat linux</a> <a href="/tags/mysql/" style="font-size: 16px;">mysql</a> <a href="/tags/openstack/" style="font-size: 17px;">openstack</a> <a href="/tags/openstack-%E4%BA%91%E8%AE%A1%E7%AE%97/" style="font-size: 17px;">openstack 云计算</a> <a href="/tags/springcloud-java/" style="font-size: 16px;">springcloud java</a> <a href="/tags/springcloud-java-%E5%BE%AE%E6%9C%8D%E5%8A%A1/" style="font-size: 16px;">springcloud java 微服务</a> <a href="/tags/zookeeper-Hadoop/" style="font-size: 16px;">zookeeper Hadoop</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93-mysql/" style="font-size: 16px;">数据库 mysql</a></div></div></div><footer class="footer"> <div class="footer_bottom"><div class="footer_box"><div class="copy"><span>主题</span><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn">Hexo</a><span>模板</span><a target="_blank" rel="noopener" href="https://jihulab.com/douzhiyong/hexo-theme-monie">Monie</a></div><div class="copy"><span>© 2023<a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">豫ICP备2023007869号-1</a></span></div></div></div></footer><html><head></head><body><span id="span"></span><script type="text/javascript">function runtime(){
+        // 初始时间，日/月/年 时:分:秒
+        X = new Date("01/01/2023 8:32:00");
+        Y = new Date();
+        T = (Y.getTime()-X.getTime());
+        M = 24*60*60*1000;
+        a = T/M;
+        A = Math.floor(a);
+        b = (a-A)*24;
+        B = Math.floor(b);
+        c = (b-B)*60;
+        C = Math.floor((b-B)*60);
+        D = Math.floor((c-C)*60);
+        //信息写入到DIV中
+        span.innerHTML = "本站勉强运行: "+A+"天"+B+"小时"+C+"分"+D+"秒"
+      }
+      setInterval(runtime, 1000);
+</script></body></html><a target="_blank" href="http://www.freecdn.pw/?zzwz" title="免费云加速（FreeCDN），为您免费提供网站加速和网站防御（DDOS、CC攻击）" alt="免费云加速（FreeCDN），为您免费提供网站加速和网站防御（DDOS、CC攻击）">本站由免费云加速（FreeCDN）提供网站加速和攻击防御服务</a>      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"> </script><script src="/assets/lib/prettify/prettify.js"> </script><script src="/assets/lib/fancybox/fancybox.js"> </script><script src="/assets/js/app.js"> </script></div></body></html>

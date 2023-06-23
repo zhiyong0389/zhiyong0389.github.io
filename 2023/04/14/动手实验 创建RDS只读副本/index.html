@@ -1,0 +1,44 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="shortcut icon" href="/assets/imgs/favicon.ico" type="image/x-icon"><title>AWS动手实验 创建RDS只读副本 | 智勇</title><meta name="keywords" content="AWS"><meta name="keywords" content="记录个人学习生活"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_3435803_wadmwlqwhps.css"><link rel="stylesheet" href="/style/index.css"><link rel="stylesheet" href="/assets/lib/prettify/prettify.css"><link rel="stylesheet" href="/assets/lib/fancybox/fancybox.css"><meta name="generator" content="Hexo 6.3.0"></head><body><div id="app"><header class="header yu13_p_30" id="header"><div class="header_left"><h1 class="yu13_logo"><a id="logo" href="/">智勇</a></h1></div><div class="header_right"><div class="header_search yu13_cursor yu13_hover" id="search"><i class="yufont icon-sousuo"></i></div><div class="line yu13_p_10"></div><nav class="header_nav"><ul class="nav"><li class="menu_nav"><a href="/"><i class="fas"></i><span> 首页</span></a></li><li class="menu_nav"><a href="/archives"><i class="fas"></i><span> 归档</span></a></li><li class="menu_nav"><a href="/categorys"><i class="fas"></i><span> 分类</span></a></li><li class="menu_nav"><a href="/tags"><i class="fas"></i><span> 标签</span></a></li><li class="menu_nav"><a href="/links"><i class="fas"></i><span> 友情链接</span></a></li></ul></nav></div></header><div class="article_topbg" style="background-image: url('/assets/imgs/top_bg.jpg')"><div class="topbg_container"><h1 class="title">AWS动手实验 创建RDS只读副本</h1><div class="info"><div class="article_meta"><div class="left"><span class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/><a href="/about">智勇</a></span><span><i class="yufont icon-yingyong"></i><span>暂无分类</span></span><span><i class="yufont icon-rili"></i>2023-4-14</span></div></div></div></div></div><div class="container log_container clearfix"><div class="article_content left"> <div class="article_main"><article class="content"><div class="content_text article_text"> <p>实验目的<br>创建Amazon RDS Read Replicas（只读副本）</p>
+<p>实验要求<br>了解只读副本的作用</p>
+<p>实验原理<br>Amazon Read Replicas（只读副本）为数据库（DB）实例提供增强的性能和持久性。此功能可以轻松实现弹性扩展，突破单个数据库实例的容量限制，以处理高读取量的数据库工作负载。您可以为给定的源数据库实例创建一个或多个副本，利用多份副本满足大量应用程序读取流量需求，以此增加总读取吞吐量。</p>
+<p>实验步骤<br>1、找到一个访问流量异常大的数据库，我们为它创建一个只读副本<br><img src="http://cloud.cstor.cn/static/upload/exp/1659423353013_admin_image.png"></p>
+<p>2、选取此数据库，在操作选项框中，点击【创建只读副本】，如下：<br><img src="http://cloud.cstor.cn/static/upload/exp/1659423361261_admin_image.png"></p>
+<p>3、在“设置”面板，配置以下信息：<br>副本源: onlyellow-db<br>数据库实例标识符 onlyellow-read-replicas<br><img src="http://cloud.cstor.cn/static/upload/exp/1659423372397_admin_image.png"></p>
+<p>4、在”区域”面板，配置目标区域为”China(Ningxia)”：<br><img src="http://cloud.cstor.cn/static/upload/exp/1659423382401_admin_image.png"></p>
+<p>5、在”数据库实例类”面板，选择”db.t2.micro”：<br><img src="http://cloud.cstor.cn/static/upload/exp/1659423395502_admin_image.png"></p>
+<p>6、在”存储”面板，选择”通用型SSD(gp2)”：<br><img src="http://cloud.cstor.cn/static/upload/exp/1659423405424_admin_image.png"><br>注：存储类型选择通用SSD，不要选择预置IOPS，否则会创建失败</p>
+<p>7、在”可用性与持久性”面板，选择”请勿创建备用实例”：<br><img src="http://cloud.cstor.cn/static/upload/exp/1659423421593_admin_image.png"></p>
+<p>8、在”连接”面板，配置以下信息：<br>网络类型：IPv4<br>子网组：保持默认<br>公开访问：公开访问（根据需求设置）<br>VPC安全组：保持默认(要开放3306端口)<br>可用区：保持默认<br>如下所示：<br><img src="http://cloud.cstor.cn/static/upload/exp/1659423435741_admin_image.png"></p>
+<p>9、在”数据库身份验证”面板，选择”密码身份验证”：<br><img src="http://cloud.cstor.cn/static/upload/exp/1659423447903_admin_image.png"></p>
+<p>10、检查配置，后点击【创建只读副本】，如下：<br><img src="http://cloud.cstor.cn/static/upload/exp/1659423460386_admin_image.png"></p>
+<p>实验结果<br>创建一个只读副本<br><img src="http://cloud.cstor.cn/static/upload/exp/1659423470230_admin_image.png"></p>
+</div><div class="article_tags"><span> <i class="yufont icon-tag"></i> 标签: </span><a href="/tags/AWS/">AWS</a></div></article><div class="article-copyright"><p>标题: <a href="/2023/04/14/%E5%8A%A8%E6%89%8B%E5%AE%9E%E9%AA%8C%20%E5%88%9B%E5%BB%BARDS%E5%8F%AA%E8%AF%BB%E5%89%AF%E6%9C%AC/">AWS动手实验 创建RDS只读副本</a></p><p> 链接: <a href="/2023/04/14/%E5%8A%A8%E6%89%8B%E5%AE%9E%E9%AA%8C%20%E5%88%9B%E5%BB%BARDS%E5%8F%AA%E8%AF%BB%E5%89%AF%E6%9C%AC/">https://zhiyong0389.github.io/2023/04/14/%E5%8A%A8%E6%89%8B%E5%AE%9E%E9%AA%8C%20%E5%88%9B%E5%BB%BARDS%E5%8F%AA%E8%AF%BB%E5%89%AF%E6%9C%AC/</a></p><p> 版权声明: 若无特殊标注皆为 智勇 原创版权, 转载请以链接形式注明作者及原始出处</p><p>最后编辑时间: 2023-06-23</p></div><div class="page_turning"><a class="page_up" href="/2023/04/14/%E5%8A%A8%E6%89%8B%E5%AE%9E%E9%AA%8C%20%E5%88%9B%E5%BB%BAMySQL/"
+  style="background-image:url(http://cloud.cstor.cn/static/upload/exp/1630481077858_admin_region-nx.png)">
+  <div class="inner"><span>上一篇:</span>
+    <p>AWS动手实验 创建MySQL</p>
+  </div>
+</a>
+<a class="page_down" href="/2023/04/14/%E5%8A%A8%E6%89%8B%E5%AE%9E%E9%AA%8C%20%E5%88%9B%E5%BB%BAKey%20Pairs/"
+style="background-image:url(http://cloud.cstor.cn/static/upload/exp/1659066792583_admin_image.png)">
+<div class="inner"><span>下一篇:</span>
+  <p>AWS动手实验 创建Key Pairs</p>
+</div>
+</a>
+</div></div></div><div class="article_sidebar left"><div class="author_sidebar sidebar_container"><div class="author_info"><div class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/></div><div class="author_name"><h3><a href="/about">智勇</a></h3><p>不断学习，不断提升！</p></div></div><div class="author_data"><ul><li> <div> <span>46</span><p>文章</p></div></li><li> <div> <span>0</span><p>分类</p></div></li><li> <div> <span>16</span><p>标签</p></div></li></ul></div></div><div class="catalogue sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-feiji"></i>目录</h3></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-24gl-folderOpen"></i>分类</h3><div class="archive_lists"><ul class="category-list"></ul></div></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-tag"></i>标签</h3><a href="/tags/AWS/" style="font-size: 20px;">AWS</a> <a href="/tags/Kubernetes/" style="font-size: 18px;">Kubernetes</a> <a href="/tags/ServiceMesh/" style="font-size: 16px;">ServiceMesh</a> <a href="/tags/helm-kubernetes/" style="font-size: 16px;">helm kubernetes</a> <a href="/tags/helm-k8s/" style="font-size: 17px;">helm,k8s</a> <a href="/tags/hexo-github%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" style="font-size: 19px;">hexo+github搭建博客</a> <a href="/tags/kubernetes/" style="font-size: 19px;">kubernetes</a> <a href="/tags/linux/" style="font-size: 17px;">linux</a> <a href="/tags/mycat-linux/" style="font-size: 16px;">mycat linux</a> <a href="/tags/mysql/" style="font-size: 16px;">mysql</a> <a href="/tags/openstack/" style="font-size: 17px;">openstack</a> <a href="/tags/openstack-%E4%BA%91%E8%AE%A1%E7%AE%97/" style="font-size: 17px;">openstack 云计算</a> <a href="/tags/springcloud-java/" style="font-size: 16px;">springcloud java</a> <a href="/tags/springcloud-java-%E5%BE%AE%E6%9C%8D%E5%8A%A1/" style="font-size: 16px;">springcloud java 微服务</a> <a href="/tags/zookeeper-Hadoop/" style="font-size: 16px;">zookeeper Hadoop</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93-mysql/" style="font-size: 16px;">数据库 mysql</a></div></div></div><footer class="footer"> <div class="footer_bottom"><div class="footer_box"><div class="copy"><span>主题</span><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn">Hexo</a><span>模板</span><a target="_blank" rel="noopener" href="https://jihulab.com/douzhiyong/hexo-theme-monie">Monie</a></div><div class="copy"><span>© 2023<a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">豫ICP备2023007869号-1</a></span></div></div></div></footer><html><head></head><body><span id="span"></span><script type="text/javascript">function runtime(){
+        // 初始时间，日/月/年 时:分:秒
+        X = new Date("01/01/2023 8:32:00");
+        Y = new Date();
+        T = (Y.getTime()-X.getTime());
+        M = 24*60*60*1000;
+        a = T/M;
+        A = Math.floor(a);
+        b = (a-A)*24;
+        B = Math.floor(b);
+        c = (b-B)*60;
+        C = Math.floor((b-B)*60);
+        D = Math.floor((c-C)*60);
+        //信息写入到DIV中
+        span.innerHTML = "本站勉强运行: "+A+"天"+B+"小时"+C+"分"+D+"秒"
+      }
+      setInterval(runtime, 1000);
+</script></body></html><a target="_blank" href="http://www.freecdn.pw/?zzwz" title="免费云加速（FreeCDN），为您免费提供网站加速和网站防御（DDOS、CC攻击）" alt="免费云加速（FreeCDN），为您免费提供网站加速和网站防御（DDOS、CC攻击）">本站由免费云加速（FreeCDN）提供网站加速和攻击防御服务</a>      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"> </script><script src="/assets/lib/prettify/prettify.js"> </script><script src="/assets/lib/fancybox/fancybox.js"> </script><script src="/assets/js/app.js"> </script></div></body></html>

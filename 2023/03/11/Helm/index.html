@@ -1,0 +1,620 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="shortcut icon" href="/assets/imgs/favicon.ico" type="image/x-icon"><title>helm学习笔记 | 智勇</title><meta name="keywords" content="helm kubernetes"><meta name="keywords" content="记录个人学习生活"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_3435803_wadmwlqwhps.css"><link rel="stylesheet" href="/style/index.css"><link rel="stylesheet" href="/assets/lib/prettify/prettify.css"><link rel="stylesheet" href="/assets/lib/fancybox/fancybox.css"><meta name="generator" content="Hexo 6.3.0"></head><body><div id="app"><header class="header yu13_p_30" id="header"><div class="header_left"><h1 class="yu13_logo"><a id="logo" href="/">智勇</a></h1></div><div class="header_right"><div class="header_search yu13_cursor yu13_hover" id="search"><i class="yufont icon-sousuo"></i></div><div class="line yu13_p_10"></div><nav class="header_nav"><ul class="nav"><li class="menu_nav"><a href="/"><i class="fas"></i><span> 首页</span></a></li><li class="menu_nav"><a href="/archives"><i class="fas"></i><span> 归档</span></a></li><li class="menu_nav"><a href="/categorys"><i class="fas"></i><span> 分类</span></a></li><li class="menu_nav"><a href="/tags"><i class="fas"></i><span> 标签</span></a></li><li class="menu_nav"><a href="/links"><i class="fas"></i><span> 友情链接</span></a></li></ul></nav></div></header><div class="article_topbg" style="background-image: url('/assets/imgs/top_bg.jpg')"><div class="topbg_container"><h1 class="title">helm学习笔记</h1><div class="info"><div class="article_meta"><div class="left"><span class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/><a href="/about">智勇</a></span><span><i class="yufont icon-yingyong"></i><span>暂无分类</span></span><span><i class="yufont icon-rili"></i>2023-3-12</span></div></div></div></div></div><div class="container log_container clearfix"><div class="article_content left"> <div class="article_main"><article class="content"><div class="content_text article_text"> <p>[label]结合传统应用的认知，Helm Chart 云原生应用包与传统应用包有以下几个维度的差异[&#x2F;label]</p>
+<table>
+<thead>
+<tr>
+<th>属性维度</th>
+<th>HELM CHART</th>
+<th>传统应用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>硬件平台</td>
+<td>ARM、X86</td>
+<td>ARM、X86</td>
+</tr>
+<tr>
+<td>系统平台</td>
+<td>Kubernetes</td>
+<td>Linux、Windows</td>
+</tr>
+<tr>
+<td>可运行文件</td>
+<td>java 程序、C 程序、Python 程序</td>
+<td>java 程序、C 程序，Python 程序</td>
+</tr>
+<tr>
+<td>可运行文件封装</td>
+<td>Image 镜像、HelmChart</td>
+<td>rpm、deb、exe</td>
+</tr>
+<tr>
+<td>管理工具</td>
+<td>Helm</td>
+<td>YUM、APT</td>
+</tr>
+<tr>
+<td>配置及环境信息</td>
+<td>values.yaml</td>
+<td>&#x2F;etc&#x2F;nginx&#x2F;nginx.conf、JVM 启动参数</td>
+</tr>
+<tr>
+<td>说明文档</td>
+<td>NOTES.txt、 README.md</td>
+<td>help 帮助、man 文档</td>
+</tr>
+</tbody></table>
+<h1 id="Helm核心概念"><a href="#Helm核心概念" class="headerlink" title="Helm核心概念"></a>Helm核心概念</h1><h2 id="1）Helm"><a href="#1）Helm" class="headerlink" title="1）Helm"></a>1）Helm</h2><p>Helm 是 Kubernetes 的包管理器。</p>
+<p>按照惯例，当指项目时，<code>Helm</code> 使用首字母大写。</p>
+<p>当指命令行时, <code>helm</code> 所有字母使用小写。</p>
+<h2 id="2）Helm-Chart"><a href="#2）Helm-Chart" class="headerlink" title="2）Helm Chart"></a>2）Helm Chart</h2><p>Helm Chart 代表着 Helm 包。包涵盖了将 Kubernetes 应用安装到 Kubernetes 集群所需要的足够多的信息。它基于一定的模板规范、目录结构和文件格式进行打包后的 tar 和 gzip 压缩包(并且可选签名) 。</p>
+<h2 id="3）Chart-Release"><a href="#3）Chart-Release" class="headerlink" title="3）Chart Release"></a>3）Chart Release</h2><p>Helm Release 是运行在 Kubernetes 集群中的 Chart 的实例。一个 Chart 通常可以在同一个集群中安装多次，每一次安装都会创建一个新的 Release。</p>
+<p>以 MySQL Chart 为例，如果你想在你的集群中运行两个数据库，你可以安装该 Chart 两次。每一个数据库都会拥有它自己的 Release 和 Release Name。</p>
+<h2 id="4）Chart-Repository"><a href="#4）Chart-Repository" class="headerlink" title="4）Chart Repository"></a>4）Chart Repository</h2><p>Helm Repository（仓库） 是用来存放和共享 Charts 的地方。它就像 Perl 的 CPAN 档案库网络 或是 Fedora 的 软件包仓库，只不过它是供 Kubernetes 包所使用的。</p>
+<p>Helm 官方默认的 Repository 是 <a target="_blank" rel="noopener" href="https://artifacthub.io/">https://artifacthub.io/</a></p>
+<h1 id="前置要求"><a href="#前置要求" class="headerlink" title="前置要求"></a>前置要求</h1><p>Helm 通过 Kubernetes 的上下文 <code>~/.kube/config</code> 来访问和管理 Kubernetes 集群中的 Chart Release。</p>
+<p>想成功和正确地使用 Helm，需要以下前置条件。</p>
+<ul>
+<li>一个 Kubernetes 集群。快速体验可以 <a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/minikube-doc">使用 minikube 来快速搭建一套 Kubernetes 集群</a></li>
+<li>确定你安装版本的安全配置。Helm 版本与 Kubernetes 版本有一定的版本匹配依赖，详情见 <a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-doc/install/helm-k8s-version-relation.html">Helm 版本与 K8s 版本对应关系</a></li>
+<li>安装和配置 Helm。<a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-doc/install/helm3-install.html">Helm3 下载安装</a></li>
+</ul>
+<h1 id="Helm-安装与配置"><a href="#Helm-安装与配置" class="headerlink" title="Helm 安装与配置"></a>Helm 安装与配置</h1><p>根据 Kuberentes 的版本来选择对应的 Helm 版本。如，Helm 的 <code>3.7.x</code> 版本可以兼容 Kuberentes 的 <code>1.22.x - 1.19.x</code> 版本。</p>
+<p>每一个版本的 Helm 提供多种操作系统的二进制版本，支持选择 Linux、Mac OS、Windows平台，以及 amd64、arm、i386、ppc64le、s390x 的 CPU 类型。这些二进制版本可以手动下载和安装。</p>
+<p>所有历史版本管理地址：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/helm/helm/releases">https://github.com/helm/helm/releases</a></li>
+</ul>
+<p>选择需要的版本进行下，例如 Linux amd64 版的下载地址</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://get.helm.sh/helm-v3.7.2-linux-amd64.tar.gz">https://get.helm.sh/helm-v3.7.2-linux-amd64.tar.gz</a></li>
+</ul>
+<p>下载完成后，解压安装：</p>
+<pre><code class="shell">wget https://get.helm.sh/helm-v3.7.2-linux-amd64.tar.gz
+tar xf helm-v3.7.2-linux-amd64.tar.gz
+cp linux-amd64/helm /usr/local/bin/helm
+chmod +x /usr/local/bin/helm
+</code></pre>
+<p>安装完成后，可以判断是否可正常使用。</p>
+<p>可正常运行的输出示例：</p>
+<pre><code class="shell">$ helm version
+version.BuildInfo&#123;Version:&quot;v3.7.2&quot;, GitCommit:&quot;663a896f4a815053445eec4153677ddc24a0a361&quot;, 
+GitTreeState:&quot;clean&quot;, GoVersion:&quot;go1.16.10&quot;&#125;
+</code></pre>
+<p>如果环境已经安装了 Kubernetes 集群，并配置了 <code>/root/.kube/config</code> 时，验证是否能够正常连接的方式可以通过</p>
+<p><code>helm ls</code> 命令。</p>
+<p>异常连接时返回：</p>
+<pre><code class="shell">$ helm ls
+Error: Kubernetes cluster unreachable
+</code></pre>
+<p>正常连接时返回：</p>
+<pre><code class="shell">$ helm ls
+NAME NAMESPACE REVISION UPDATED STATUS CHART APP VERSION
+</code></pre>
+<h1 id="配置-Helm-Repository"><a href="#配置-Helm-Repository" class="headerlink" title="配置 Helm Repository"></a>配置 Helm Repository</h1><p>当您已经安装并配置好 Helm 之后，可以添加一个 Helm Chart Repository 仓库。可从默认的 Artifact Hub 中查找有效的 Helm Chart 仓库，也可以自行添加一个新的 Repository 仓库</p>
+<p>可以通过 <code>helm repo add</code> 来添加一个新的 Repository 仓库。例如，添加 bitnami 的 repo 仓库</p>
+<pre><code class="shell">$ helm repo add bitnami https://charts.bitnami.com/bitnami
+</code></pre>
+<p>添加成功后，可以通过 <code>helm repo list</code> 来查看本地已经支持的 Repository 仓库列表。</p>
+<pre><code class="shell">$ helm repo list
+NAME            URL 
+stable          https://charts.helm.sh/stable 
+bitnami         https://charts.bitnami.com/bitnami
+</code></pre>
+<p>当完成 Repository 添加，您将可以通过 <code>helm search</code> 看到可安装使用的 Charts 列表：</p>
+<pre><code class="shell">$ helm search repo bitnami
+NAME                    CHART VERSION    APP VERSION   DESCRIPTION
+bitnami/bitnami-common  0.0.9            0.0.9         DEPRECATED Chart with custom templates used in ...
+bitnami/airflow         8.0.2            2.0.0         Apache Airflow is a platform to programmaticall...
+bitnami/apache          8.2.3            2.4.46        Chart for Apache HTTP Server
+bitnami/aspnet-core     1.2.3            3.1.9         ASP.NET Core is an open-source framework create...
+# ... and many more
+</code></pre>
+<h1 id="安装-Chart-示例"><a href="#安装-Chart-示例" class="headerlink" title="安装 Chart 示例"></a>安装 Chart 示例</h1><p>在安装具体 Chart 前，建议先通过 <code>helm repo update</code> 命令同步本地缓存信息，核心是更新本地 Repository 的 <code>index.yaml</code> 缓存文件，该文件中包含可以获取到的最新 Charts 列表以及仓库中每个 Chart 的 Metadata 信息，以及相关的版本信息等。</p>
+<pre><code class="shell">$ helm repo update
+</code></pre>
+<p>通过 <code>helm install</code> 命令安装 Chart。 Helm 可以通过多种途径查找和安装 Chart， 但最简单的是安装方式还是直接安装在线的 Charts。</p>
+<pre><code class="shell">$ helm install bitnami/mysql --generate-name
+NAME: mysql-1612624192
+LAST DEPLOYED: Sat Feb 6 16:09:56 2021
+NAMESPACE: default
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES: ...
+</code></pre>
+<p>在上面的例子中，<code>bitnami/mysql</code> 这个 Chart 被安装发布成 Release，名字是 <code>mysql-1612624192</code></p>
+<p>每当您执行 <code>helm install</code> 的时候，都会创建一个新的 Release。 所以一个 Chart 在同一个集群里面可以被安装多次，每一个都可以被独立的管理和升级。</p>
+<p>您可以通过执行 <code>helm show chart bitnami/mysql</code> 命令简单了解到这个 Chart 的基本信息。 或者您可以执行 <code>helm show all bitnami/mysql</code> 获取关于该 Chart 的所有信息。</p>
+<h1 id="管理-Release"><a href="#管理-Release" class="headerlink" title="管理 Release"></a>管理 Release</h1><p>通过 <code>helm list</code> 您可以很容易看到哪些 Chart 被发布安装到 Kubernetes 集群中：</p>
+<pre><code class="shell">$ helm list
+NAME             NAMESPACE  REVISION  UPDATED     STATUS                      CHART      APP VERSION
+mysql-1612624192 default    1         2021-02-06  16:09:56.283059 +0100 CET   deployed   mysql-8.3.0 8.0.23
+</code></pre>
+<p>如果环境中的 Release 已经达到目的或不满足使用需求时，可以使用 <code>helm uninstall</code> 命令卸载你的 Release</p>
+<pre><code class="shell">$ helm uninstall mysql-1612624192
+release &quot;mysql-1612624192&quot; uninstalled
+</code></pre>
+<p>该命令会从 Kubernetes 中卸载 <code>mysql-1612624192</code>， 它将删除和该版本相关的所有相关资源（service、deployment、 pod等等）甚至版本历史。</p>
+<p>如果您在执行 <code>helm uninstall</code> 的时候提供 <code>--keep-history</code> 选项， Helm 将会保存版本历史。</p>
+<p>可以通过 <code>helm status</code> 命令查看指定的 Release 版本信息</p>
+<pre><code class="shell">$ helm status mysql-1612624192
+Status: UNINSTALLED
+...
+</code></pre>
+<p>在删除 Release 指定的 <code>--keep-history</code> 选项会让 Helm 跟踪你的版本（即使你卸载了他们）， 所以你可以审计集群历史甚至使用 <code>helm rollback</code> 回滚版本。</p>
+<p>如果您想通过 Helm 命令查看更多的有用的信息，请使用 <code>helm help</code> 命令，或者在任意命令后添加 <code>-h</code> 选项：</p>
+<pre><code class="shell">$ helm get -h
+</code></pre>
+<h1 id="Helm-Chart"><a href="#Helm-Chart" class="headerlink" title="Helm Chart"></a>Helm Chart</h1><h2 id="Helm-Chart-组成"><a href="#Helm-Chart-组成" class="headerlink" title="Helm Chart 组成"></a>Helm Chart 组成</h2><p>基于模板创建示例（helm create）</p>
+<pre><code class="shell">$ helm create mychart
+Creating mychart
+</code></pre>
+<p>Helm Chart 组成</p>
+<pre><code class="shell">$ tree mychart
+mychart
+├── charts
+├── Chart.yaml
+├── templates
+│ ├── deployment.yaml
+│ ├── _helpers.tpl
+│ ├── hpa.yaml
+│ ├── ingress.yaml
+│ ├── NOTES.txt
+│ ├── serviceaccount.yaml
+│ ├── service.yaml
+│ └── tests
+│ └── test-connection.yaml
+└── values.yaml
+
+$ tree mychart
+</code></pre>
+<h2 id="文件介绍"><a href="#文件介绍" class="headerlink" title="文件介绍"></a>文件介绍</h2><ul>
+<li><p><code>mychart/</code>: 一个 Chart 的根目录。目录名称没有限制要求，但推荐命名为和功能一致的组建名称，如 <code>wordpress/</code>。</p>
+</li>
+<li><p><code>mychart/charts/</code>: 管理子 Chart 的目录，在 Charts.yaml 中 dependency 依赖的 Chart 通过 helm dependency build 可以缓存到 charts 目录中。</p>
+</li>
+<li><p><code>mychart/Chart.yaml</code>: 有关 chart 的信息存储在名为 Chart.yaml 的特殊文件中。Chart.yaml 文件与 Chart 对象。</p>
+</li>
+<li><p><code>mychart/templates</code>: 待渲染的 Kubernetes 清单文件存放的位置，会将该目录中的内容 <code>&#123;&#123;&#125;&#125;</code> 内容渲染后生存 Kubernetes 文件。</p>
+</li>
+<li><p><code>mychart/templates/_helps.tpl</code>: 在 templates 中特例是以下划线 <code>_</code> 开头的文件，该文件在安装升级时不会渲染。</p>
+</li>
+<li><p><code>mychart/templates/NOTES.txt</code>: 在 Helm 安装和升级完成后，在终端中显示出的提示信息，该文件中的变量 <code>&#123;&#123;&#125;&#125;</code> 内容也会被渲染，该内容应该保持精简。</p>
+</li>
+<li><p><code>mychart/templates/tests/</code>: Helm 支持在安装或完成后提供测试的支持，测试的服务保存在该目录中，通过 helm test 执行测试。</p>
+</li>
+<li><p><code>mychart/values.yaml</code>: 使用 <code>values.yaml 文件</code> 来配置和保存变量，使用 <code>.Values 对象</code> 在模板中引用该变量。</p>
+</li>
+<li><p><code>.helmignore</code>: Helm 支持在打包时可以忽略一些文件，类似 git 的 <code>.gitignore</code> 文件。</p>
+</li>
+<li><p><code>mychart/crds</code>: 保存 CRD 的目录，为了保障安装， CRD 的文件只支持自动安装，不支持自动卸载。</p>
+</li>
+<li><p><code>mychart/requirements.yaml</code>: Helm V2 版本声明 Chart 依赖的文件，Helm V3 版本已经弃用，由 Chart.yaml 中的 dependency 替代。</p>
+</li>
+</ul>
+<h1 id="Helm-Chart-仓库"><a href="#Helm-Chart-仓库" class="headerlink" title="Helm Chart 仓库"></a>Helm Chart 仓库</h1><p>在高层级中，Chart 仓库是打包的 Chart 存储和分享的位置。</p>
+<p>不过 Helm 也可以创建并运行你自己的 Chart仓 库。</p>
+<p>由于 Chart 仓库可以是任何服务于 YAML 和 tar 文件并响应 GET 请求的 HTTP 服务器，</p>
+<p>托管你自己的 Chart 仓库时就有很多选择。比如可以使用 Google Cloud Storage(GCS)， Amazon S3，</p>
+<p>GitHub 页面，甚至创建自己的 Web 服务器。</p>
+<h2 id="Chart-仓库结构"><a href="#Chart-仓库结构" class="headerlink" title="Chart 仓库结构"></a>Chart 仓库结构</h2><p>Chart 仓库是一个配置了 index.yaml 文件和一些已经打包 Chart 的 HTTP 服务器。当你准备好分享 Chart 时，最好的方法是将 Chart 上传到 Chart 仓库。</p>
+<p>Chart 仓库由 Chart 包和包含了仓库中所有 Chart 索引的特殊文件 index.yaml。</p>
+<p>通常描述 Chart 的 index.yaml 也托管在同一个服务器上作为来源文件。</p>
+<p>比如，<code>https://example.com/charts</code> 仓库布局可能看起来像这样：</p>
+<pre><code class="shell">charts/
+|
+|- index.yaml
+|
+|- alpine-0.1.2.tgz
+|
+|- alpine-0.1.2.tgz.prov
+</code></pre>
+<p>在这个案例中，index 文件包含了 Alpine 这一个 Chart 的信息，并提供了下载地址：</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://example.com/charts/alpine-0.1.2.tgz%E3%80%82">https://example.com/charts/alpine-0.1.2.tgz。</a></li>
+</ul>
+<p>index.yaml 文件不是必须和 Chart 包放在同一个服务器上，但是这样是最方便的。</p>
+<h2 id="index文件"><a href="#index文件" class="headerlink" title="index文件"></a>index文件</h2><p>index.yaml 文件是一个 yaml 格式的文件。包含了一些包的元信息，包括 Chart 中 Chart.yaml 文件的内容。 一个合法的 Chart 仓库必须有一个 index 文件，包含了 Chart 仓库中每一个 Chart 的信息。 <code>helm repo index</code> 命令会基于给定的包含 Chart 包的本地目录生成一个 index 文件。</p>
+<p>index文件类似于这样：</p>
+<pre><code class="yaml">apiVersion: v1
+entries:
+  alpine:
+    - created: 2016-10-06T16:23:20.499814565-06:00
+      description: Deploy a basic Alpine Linux pod
+      digest: 99c76e403d752c84ead610644d4b1c2f2b453a74b921f422b9dcb8a7c8b559cd
+      home: https://helm.sh/helm
+      name: alpine
+      sources:
+      - https://github.com/helm/helm
+      urls:
+      - https://technosophos.github.io/tscharts/alpine-0.2.0.tgz
+      version: 0.2.0
+    - created: 2016-10-06T16:23:20.499543808-06:00
+      description: Deploy a basic Alpine Linux pod
+      digest: 515c58e5f79d8b2913a10cb400ebb6fa9c77fe813287afbacf1a0b897cd78727
+      home: https://helm.sh/helm
+      name: alpine
+      sources:
+      - https://github.com/helm/helm
+      urls:
+      - https://technosophos.github.io/tscharts/alpine-0.1.0.tgz
+      version: 0.1.0
+  nginx:
+    - created: 2016-10-06T16:23:20.499543808-06:00
+      description: Create a basic nginx HTTP server
+      digest: aaff4545f79d8b2913a10cb400ebb6fa9c77fe813287afbacf1a0b897cdffffff
+      home: https://helm.sh/helm
+      name: nginx
+      sources:
+      - https://github.com/helm/charts
+      urls:
+      - https://technosophos.github.io/tscharts/nginx-1.1.0.tgz
+      version: 1.1.0
+generated: 2016-10-06T16:23:20.499029981-06:00
+</code></pre>
+<h1 id="自建-Chart-仓库"><a href="#自建-Chart-仓库" class="headerlink" title="自建 Chart 仓库"></a>自建 Chart 仓库</h1><p>由于 Chart 仓库可以是任何服务于 YAML 和 tar 文件并响应 GET 请求的 HTTP 服务器。因此在自己搭建 Chart 仓库时可以通过 Nginx 提供 HTTP 服务。</p>
+<h2 id="安装并启动-Nginx-服务器"><a href="#安装并启动-Nginx-服务器" class="headerlink" title="安装并启动 Nginx 服务器"></a>安装并启动 Nginx 服务器</h2><p>根据操作系统的发型版本不通，可以选择使用不同的工具来安装 Web 服务器。</p>
+<p>例如，在 CentOS7 系统中通过如下命令安装并启动基于 nginx 的 WEB 服务器。</p>
+<pre><code class="shell">$ yum install nginx -y
+$ systemctl enabled nginx
+$ systemctl start nginx
+</code></pre>
+<h2 id="制作-Chart-源"><a href="#制作-Chart-源" class="headerlink" title="制作 Chart 源"></a>制作 Chart 源</h2><p>作为 Chart 源下载的文件，需要将 Chart 目录按照格式 <code>&#123;&#123; .Chart.Name&#125;&#125;-&#123;&#123; .Chart.Version&#125;&#125;.tgz</code> 打包成 tgz 的包。</p>
+<p>可以使用 <code>helm package</code> 命令自动按照格式打包</p>
+<pre><code class="shell">$ mkdir fantastic-charts
+$ helm create alpine
+$ helm package fantastic-charts/alpine/
+</code></pre>
+<p>Chart 源中除了各个应用的 Chart 包之外，还依赖 index.yaml 的索引文件。</p>
+<p>可以通过 <code>helm repo index</code> 命令来创建 index.yaml 文件，参考命令如：</p>
+<pre><code class="shell">$ helm repo index fantastic-charts --url https://fantastic-charts.storage.googleapis.com
+</code></pre>
+<p><code>--url</code> 参数指定 Chart 源服务器地址，可以防止 Chart 源被非法引用。</p>
+<h2 id="复制到-Web-服务器"><a href="#复制到-Web-服务器" class="headerlink" title="复制到 Web 服务器"></a>复制到 Web 服务器</h2><p>将制作好的 Chart 包和 index.yaml 文件复制到 Web 服务器目录。</p>
+<p>确保 index.yaml 文件无需验证即可访问</p>
+<pre><code class="shell">$ mv fantastic-charts/* /var/www/web/
+</code></pre>
+<p>至此已经搭建好了一套 Chart 源服务。</p>
+<h2 id="测试验证"><a href="#测试验证" class="headerlink" title="测试验证"></a>测试验证</h2><p>添加该 Chart 源作为 repo</p>
+<pre><code class="shell">$ helm repo add myrepo https://fantastic-charts.storage.googleapis.com
+$ helm update
+</code></pre>
+<h1 id="Helm-命令"><a href="#Helm-命令" class="headerlink" title="Helm 命令"></a>Helm 命令</h1><h2 id="helm-completion"><a href="#helm-completion" class="headerlink" title="helm completion"></a>helm completion</h2><p>为指定的 shell 生成自动补全脚本。</p>
+<p>为 Helm 生成针对于指定 shell 的自动补全脚本</p>
+<pre><code class="shell">helm completion bash &gt; /etc/bash_completion.d/helm
+bash
+</code></pre>
+<p>子命令</p>
+<ul>
+<li>helm completion bash - 为bash生成自动补全脚本</li>
+<li>helm completion fish - 为fish生成自动补全脚本</li>
+<li>helm completion powershell - 为powershell生成自动补全脚本</li>
+<li>helm completion zsh - 为zsh生成自动补全脚本</li>
+</ul>
+<h2 id="helm-chart"><a href="#helm-chart" class="headerlink" title="helm chart"></a>helm chart</h2><p>helm chart 是管理 Chart 包的命令。</p>
+<p>子命令</p>
+<ul>
+<li>helm chart export 导出 chart 包。于 Helm 3.7.0 版本中移除</li>
+<li>helm chart list 列出当前chart包</li>
+<li>helm chart pull 下载chart包</li>
+<li>helm chart push 推送chart包</li>
+<li>helm chart remove 删除chart包</li>
+<li>helm chart save 保存chart包</li>
+</ul>
+<h2 id="helm-create"><a href="#helm-create" class="headerlink" title="helm create"></a>helm create</h2><p>使用给定名称创建新的 Chart</p>
+<p>该命令创建 Chart 目录和 Chart 用到的公共文件目录</p>
+<p>比如 <code>helm create foo</code> 会创建一个目录结构看起来像这样：</p>
+<pre><code>foo/
+├── .helmignore # Contains patterns to ignore when packaging Helm charts.
+├── Chart.yaml # Information about your chart
+├── values.yaml # The default values for your templates
+├── charts/ # Charts that this chart depends on
+└── templates/ # The template files
+└── tests/ # The test files
+</code></pre>
+<p><code>helm create</code> 使用一个目录作为参数。如果给定目录路径不存在，Helm 会自动创建。如果给定目录存在且非空，冲突文件会被覆盖，其他文件会被保留。</p>
+<pre><code class="shell">$ helm create NAME [flags]
+</code></pre>
+<h2 id="helm-delete"><a href="#helm-delete" class="headerlink" title="helm delete"></a>helm delete</h2><p>删除指定chart</p>
+<p>该命令被重命名。 helm uninstall</p>
+<h2 id="helm-env"><a href="#helm-env" class="headerlink" title="helm env"></a>helm env</h2><p>helm 客户端环境信息</p>
+<p>Env 打印所有 Helm 使用的环境信息</p>
+<pre><code class="shell">$ helm env [flags]
+</code></pre>
+<h2 id="helm-get"><a href="#helm-get" class="headerlink" title="helm get"></a>helm get</h2><p>查看已经部署到环境中的 Release 信息</p>
+<p>该命令有多个子命令组成，用来获取发布版本的扩展信息，包括：</p>
+<ul>
+<li>生成版本的值</li>
+<li>生成的清单文件</li>
+<li>发布的chart提供的注释</li>
+<li>与版本关联的钩子</li>
+</ul>
+<p>注意与 <code>helm get</code> 命令的差异。 <code>helm get</code> 是获取部署到环境中的 Release 的信息，<code>helm show</code> 是查看 Chart 仓库中 Chart 包的信息。</p>
+<h2 id="helm-get-all"><a href="#helm-get-all" class="headerlink" title="helm get all"></a>helm get all</h2><p>获取已经安装的 Release 所有信息</p>
+<p>该命令打印一个具有可读性的信息集合，包括注释，钩子，提供的 values，以及给定版本生成的清单文件。</p>
+<pre><code class="shell">$ helm get all RELEASE_NAME [flags]
+</code></pre>
+<h2 id="helm-get-hooks"><a href="#helm-get-hooks" class="headerlink" title="helm get hooks"></a>helm get hooks</h2><p>获取已发布 Release 的 hooks 信息</p>
+<p>该命令下载指定版本的钩子</p>
+<p>钩子被格式化为YAML格式并以YAML的’—\n’分隔符分隔</p>
+<pre><code class="shell">$ helm get hooks RELEASE_NAME [flags]
+</code></pre>
+<h2 id="helm-get-manifest"><a href="#helm-get-manifest" class="headerlink" title="helm get manifest"></a>helm get manifest</h2><p>获取已发布 Release 的 Kubernetes manifest 资源文件</p>
+<p>该命令用来获取指定版本的清单文件</p>
+<p>清单是由该版本的 chart 生成的 Kubernetes 资源的 YAML 编码表示。</p>
+<pre><code class="shell">$ helm get manifest RELEASE_NAME [flags]
+</code></pre>
+<h2 id="helm-get-notes"><a href="#helm-get-notes" class="headerlink" title="helm get notes"></a>helm get notes</h2><p>获取已发布 Release 的 notes.txt 的内容</p>
+<p>该命令显示了由指定版本chart提供的注释</p>
+<pre><code class="shell">$ helm get notes RELEASE_NAME [flags]
+</code></pre>
+<h2 id="helm-get-values"><a href="#helm-get-values" class="headerlink" title="helm get values"></a>helm get values</h2><p>获取已发布 Rlease 的 values.yaml 信息</p>
+<p>该命令下载给定版本的values文件</p>
+<pre><code class="shell">$ helm get values RELEASE_NAME [flags]
+</code></pre>
+<h2 id="helm-history"><a href="#helm-history" class="headerlink" title="helm history"></a>helm history</h2><p>打印给定版本的历史修订。</p>
+<p>默认会返回最大的256个历史版本。设置 ‘–max’ 配置返回历史列表的最大长度。</p>
+<p>历史发布集合会被打印成格式化的表格，例如：</p>
+<pre><code class="shell">$ helm history angry-bird
+REVISION UPDATED                   STATUS       CHART         APP VERSION   DESCRIPTION
+1        Mon Oct 3 10:15:13 2016   superseded   alpine-0.1.0  1.0           Initial install
+2        Mon Oct 3 10:15:13 2016   superseded   alpine-0.1.0  1.0           Upgraded successfully
+3        Mon Oct 3 10:15:13 2016   superseded   alpine-0.1.0  1.0           Rolled back to 2
+4        Mon Oct 3 10:15:13 2016   deployed     alpine-0.1.0  1.0           Upgraded successfully
+
+helm history RELEASE_NAME [flags]
+</code></pre>
+<h2 id="helm-install"><a href="#helm-install" class="headerlink" title="helm install"></a>helm install</h2><p>该命令用于安装 chart 包。</p>
+<p>安装参数必须是 chart 的引用，一个打包后的 chart 路径，未打包的 chart 目录或者是一个URL。</p>
+<p>要重写 chart 中的值，</p>
+<p>使用 ‘–values’ 参数传递一个文件或者</p>
+<p>使用 ‘–set’ 参数在命令行传递配置，</p>
+<p>强制使用字符串要用’–set-string’。 示例中要是值太大，则您既不想用’–values’也不想用’–set’，</p>
+<p>使用’–set-file’从文件中读取单个较大的值。</p>
+<pre><code class="shell">$ helm install -f myvalues.yaml myredis ./redis
+</code></pre>
+<p>或者</p>
+<pre><code class="shell">$ helm install --set name=prod myredis ./redis
+</code></pre>
+<p>或者</p>
+<pre><code class="shell">$ helm install --set-string long_int=1234567890 myredis ./redis
+</code></pre>
+<p>或者</p>
+<pre><code class="shell">$ helm install --set-file my_script=dothings.sh myredis ./redis
+</code></pre>
+<p>你可以多次指定 <code>--values</code>&#x2F;<code>-f</code> 参数。最右侧指定的文件优先级最高。</p>
+<p>比如，如果两个文件 <code>myvalues.yaml</code> 和 <code>override.yaml</code> 都包含名为 ‘Test’的可以，<code>override.yaml</code> 中的值优先：</p>
+<pre><code class="shell">$ helm install -f myvalues.yaml -f override.yaml myredis ./redis
+</code></pre>
+<p>可以指定 <code>--set</code> 参数多次，最右边的参数优先级最高，比如，<code>bar</code> 和 <code>newbar</code> 都设置了一个名为 <code>foo</code> 的可以，<code>newbar</code> 的值优先：</p>
+<pre><code class="shell">$ helm install --set foo=bar --set foo=newbar myredis ./redis
+</code></pre>
+<p>为了检测生成的清单，但并不安装到 chart ，可以将 <code>--debug</code> 和 <code>--dry-run</code> 组合使用。</p>
+<p>如果设置了 <code>--verify</code>，chart必须有出处文件，且出处文件必须传递所有的验证步骤。</p>
+<p>有五种不同的方式来标识需要安装的chart：</p>
+<ol>
+<li>通过 chart 引用： <code>helm install mymaria example/mariadb</code></li>
+<li>通过 chart 包： <code>helm install mynginx ./nginx-1.2.3.tgz</code></li>
+<li>通过未打包 chart 目录的路径： <code>helm install mynginx ./nginx</code></li>
+<li>通过 URL 绝对路径： <code>helm install mynginx https://example.com/charts/nginx-1.2.3.tgz</code></li>
+<li>通过 chart 引用和仓库 url： <code>helm install --repo https://example.com/charts/ mynginx nginx</code></li>
+</ol>
+<h2 id="helm-lint"><a href="#helm-lint" class="headerlink" title="helm lint"></a>helm lint</h2><p>验证 chart 是否存在问题</p>
+<p>该命令使用一个 chart 路径并运行一系列的测试来验证 chart 的格式是否正确。</p>
+<p>如果遇到引起 chart 安装失败的情况，会触发 <code>[ERROR]</code> 信息，如果遇到违反惯例或建议的问题，会触发 <code>[WARNING]</code>。</p>
+<pre><code class="shell">$ helm lint PATH [flags]
+</code></pre>
+<h2 id="helm-list"><a href="#helm-list" class="headerlink" title="helm list"></a>helm list</h2><p>列举发布版本.</p>
+<p>该命令会列举出指定命名空间的所有发布版本，(如果没有指定命名空间，会使用当前命名空间)。</p>
+<p>默认情况下，只会列举出部署的或者失败的发布，像 <code>--uninstalled</code> 或者 <code>--all</code> 会修改默认行为。这些参数可以组合使用：<code>--uninstalled --failed</code>。</p>
+<p>默认情况下，列表按字母排序。使用 <code>-d</code> 参数按照日期排序。</p>
+<p>如果使用 <code>--filter</code> 参数，会作为一个过滤器。过滤器是应用于发布列表的正则表达式(兼容Perl)。只有过滤器匹配的才会返回。</p>
+<pre><code class="shell">$ helm list --filter &#39;ara[a-z]+&#39;
+NAME                 UPDATED                                   CHART
+maudlin-arachnid     2020-06-18 14:17:46.125134977 +0000 UTC   alpine-0.1.0
+</code></pre>
+<p>如果未找到结果，<code>helm list</code> 会退出，但是没有输出(或者使用’-q’，只返回头部）。</p>
+<p>默认情况下，最多返回256项，使用 <code>--max</code> 限制数量，<code>--max</code> 设置为 <code>0</code> 不会返回所有结果，而是返回服务器默认值，可能要比256更多。 同时使用 <code>--max</code> 和 <code>--offset</code> 参数可以翻页显示。</p>
+<pre><code class="shell">$ helm list [flags]
+</code></pre>
+<h2 id="helm-package"><a href="#helm-package" class="headerlink" title="helm package"></a>helm package</h2><p>将 chart 目录打包到 chart 归档中</p>
+<p>该命令将 chart 打包成一个 chart 版本包文件。如果给定路径，就会在该路径中查找 chart（必须包含 Chart.yaml 文件）然后将目录打包。</p>
+<p>chart 版本包会用于 Helm 包仓库。</p>
+<p>要签名一个 chart，使用 <code>--sign</code> 参数，在大多数场景中，也要提供 <code>--keyring path/to/secret/keys</code> 和 <code>--key keyname</code>。</p>
+<pre><code class="shell">$ helm package --sign ./mychart --key mykey --keyring ~/.gnupg/secring.gpg
+</code></pre>
+<p>如果 <code>--keyring</code> 未指定，除非配置了其他方式，不然 Helm 通常会指定公共秘钥环。</p>
+<pre><code class="shell">$ helm package [CHART_PATH] [...] [flags]
+</code></pre>
+<h2 id="helm-plugin"><a href="#helm-plugin" class="headerlink" title="helm plugin"></a>helm plugin</h2><p>安装、列举或卸载 Helm 插件</p>
+<p>管理客户端插件。</p>
+<h2 id="helm-plugin-install"><a href="#helm-plugin-install" class="headerlink" title="helm plugin install"></a>helm plugin install</h2><p>安装一个或多个Helm插件</p>
+<p>该命令允许您通过 VCS 仓库url或者本地路径安装插件。</p>
+<pre><code class="shell">$ helm plugin install [options] &lt;path|url&gt;... [flags]
+</code></pre>
+<h2 id="helm-plugin-list"><a href="#helm-plugin-list" class="headerlink" title="helm plugin list"></a>helm plugin list</h2><p>列举已安装的 Helm 插件</p>
+<pre><code class="shell">$ helm plugin list [flags]
+</code></pre>
+<h2 id="helm-plugin-uninstall"><a href="#helm-plugin-uninstall" class="headerlink" title="helm plugin uninstall"></a>helm plugin uninstall</h2><p>卸载一个或多个 Helm 插件</p>
+<pre><code class="shell">$ helm plugin uninstall &lt;plugin&gt;... [flags]
+</code></pre>
+<h2 id="helm-plugin-update"><a href="#helm-plugin-update" class="headerlink" title="helm plugin update"></a>helm plugin update</h2><p>升级一个或多个Helm插件</p>
+<pre><code class="shell">$ helm plugin update &lt;plugin&gt;... [flags]
+</code></pre>
+<h1 id=""><a href="#" class="headerlink" title=""></a></h1><h2 id="helm-pull"><a href="#helm-pull" class="headerlink" title="helm pull"></a>helm pull</h2><p>从仓库下载并（可选）在本地目录解压</p>
+<p>从包仓库中检索包并下载到本地。</p>
+<p>对于要获取检查，修改或重新打包的包很有用，还可以用于在不安装 chart 的情况下对 chart 进行加密验证。</p>
+<p>下载 chart 之后有解压的选项，会为chart创建一个目录并解压到这个目录中。</p>
+<p>如果指定了 <code>--verify</code> 参数，请求的 chart 必须有出处文件，且必须通过验证。任意部分的失败都会导致错误，且 chart 不会在本地保存。</p>
+<pre><code class="shell">$ helm pull [chart URL | repo/chartname] [...] [flags]
+</code></pre>
+<h2 id="helm-repo"><a href="#helm-repo" class="headerlink" title="helm repo"></a>helm repo</h2><p>添加、列出、删除、更新和索引chart仓库</p>
+<p>该命令由于chart仓库交互的多条子命令组成</p>
+<p>可以用来添加、删除、列举和索引chart仓库</p>
+<h2 id="helm-repo-add"><a href="#helm-repo-add" class="headerlink" title="helm repo add"></a>helm repo add</h2><p>添加chart仓库</p>
+<pre><code class="shell">$ helm repo add [NAME] [URL] [flags]
+</code></pre>
+<h2 id="helm-repo-index"><a href="#helm-repo-index" class="headerlink" title="helm repo index"></a>helm repo index</h2><p>基于包含打包 chart 的目录，生成索引文件</p>
+<p>读取当前目录，并根据找到的 chart 生成索引文件。</p>
+<p>这个工具用来为chart仓库创建一个’index.yaml’文件，使用’–url’参数创建一个chart的绝对URL。</p>
+<p>要合并生成的索引和已经存在的索引文件时，使用’–merge’参数。在这个场景中，在当前目录中找到的chart会合并到已有索引中， 本地chart的优先级高于已有chart。</p>
+<pre><code class="shell">$ helm repo index [DIR] [flags]
+</code></pre>
+<h2 id="helm-repo-list"><a href="#helm-repo-list" class="headerlink" title="helm repo list"></a>helm repo list</h2><p>列举 chart 仓库</p>
+<pre><code class="sh">$ helm repo list [flags]
+</code></pre>
+<h2 id="helm-repo-remove"><a href="#helm-repo-remove" class="headerlink" title="helm repo remove"></a>helm repo remove</h2><p>删除一个或多个仓库</p>
+<pre><code class="shell">$ helm repo remove [REPO1 [REPO2 ...]] [flags]
+</code></pre>
+<h2 id="helm-repo-update"><a href="#helm-repo-update" class="headerlink" title="helm repo update"></a>helm repo update</h2><p>从chart仓库中更新本地可用chart的信息</p>
+<p>更新从各自chart仓库中获取的有关chart的最新信息。信息会缓存在本地，被诸如’helm search’等命令使用。</p>
+<p>你可以指定需要更新的仓库列表。</p>
+<pre><code class="shell">$ helm repo update &lt;repo_name&gt; ...
+</code></pre>
+<p>使用 <code>helm repo update</code> 更新所有仓库。</p>
+<pre><code class="shell">$ helm repo update [REPO1 [REPO2 ...]] [flags]
+</code></pre>
+<h2 id="helm-rollback"><a href="#helm-rollback" class="headerlink" title="helm rollback"></a>helm rollback</h2><p>回滚发布到上一个版本</p>
+<p>该命令回滚发布到上一个版本</p>
+<p>回滚命令的第一个参数是发布的名称，第二是修订（版本）号，如果省略此参数，会回滚到上一个版本。</p>
+<p>要查看修订号，执行 <code>helm history RELEASE</code>。</p>
+<pre><code class="shell">$ helm rollback &lt;RELEASE&gt; [REVISION] [flags]
+</code></pre>
+<h2 id="helm-search"><a href="#helm-search" class="headerlink" title="helm search"></a>helm search</h2><p>helm 中搜索关键字</p>
+<p>搜索提供了可以在已经添加的 Artifact Hub 和仓库等多个位置搜索 Helm chart 的能力。</p>
+<h2 id="helm-search-hub"><a href="#helm-search-hub" class="headerlink" title="helm search hub"></a>helm search hub</h2><p>在 Artifact Hub 或自己的 hub 实例中搜索 Helm charts。</p>
+<pre><code class="shell">$ helm search hub [KEYWORD] [flags]
+</code></pre>
+<h2 id="helm-search-repo"><a href="#helm-search-repo" class="headerlink" title="helm search repo"></a>helm search repo</h2><p>用 chart 中关键字搜索仓库</p>
+<p>搜索会读取系统上配置的所有仓库，并查找匹配。搜索这些仓库会使用存储在系统中的元数据。</p>
+<p>它会展示找到最新稳定版本的chart。如果指定了–devel参数，输出会包括预发布版本。</p>
+<pre><code class="shell">$ helm search repo [keyword] [flags]
+</code></pre>
+<h2 id="helm-show"><a href="#helm-show" class="headerlink" title="helm show"></a>helm show</h2><p>显示chart信息</p>
+<p>该命令由多条子命令组成来显示chart的信息</p>
+<p>注意与 <code>helm get</code> 命令的差异。 <code>helm get</code> 是获取部署到环境中的 Release 的信息，<code>helm show</code> 是查看 Chart 仓库中 Chart 包的信息。</p>
+<h2 id="helm-show-all"><a href="#helm-show-all" class="headerlink" title="helm show all"></a>helm show all</h2><p>显示chart的所有信息</p>
+<p>该命令检查chart(目录、文件或URL)并显示所有的内容（values.yaml, Charts.yaml, README）</p>
+<pre><code class="shell">$ helm show all [CHART] [flags]
+</code></pre>
+<h2 id="helm-show-chart"><a href="#helm-show-chart" class="headerlink" title="helm show chart"></a>helm show chart</h2><p>显示 chart 定义</p>
+<p>该命令检查 chart (目录、文件或URL)并显示Charts.yaml文件的内容</p>
+<pre><code class="shell">$ helm show chart [CHART] [flags]
+</code></pre>
+<h2 id="helm-show-crds"><a href="#helm-show-crds" class="headerlink" title="helm show crds"></a>helm show crds</h2><p>显示 chart 的CRD</p>
+<p>该命令检查 chart(目录、文件或URL)并显示自定义资源（CustomResourceDefintion）文件的内容。</p>
+<pre><code class="sh">$ helm show crds [CHART] [flags]
+</code></pre>
+<h2 id="helm-show-readme"><a href="#helm-show-readme" class="headerlink" title="helm show readme"></a>helm show readme</h2><p>显示chart的README</p>
+<p>该命令检查chart(目录、文件或URL)并显示README文件内容</p>
+<pre><code class="shell">$ helm show readme [CHART] [flags]
+</code></pre>
+<h2 id="helm-show-values"><a href="#helm-show-values" class="headerlink" title="helm show values"></a>helm show values</h2><p>显示chart的values</p>
+<p>该命令检查chart(目录、文件或URL)并显示values.yaml文件的内容</p>
+<pre><code class="shell">$ helm show values [CHART] [flags]
+</code></pre>
+<h2 id="helm-status"><a href="#helm-status" class="headerlink" title="helm status"></a>helm status</h2><p>显示已命名发布的状态</p>
+<p>该命令显示已命名发布的状态，状态包括：</p>
+<ul>
+<li>最后部署时间</li>
+<li>发布版本所在的k8s命名空间</li>
+<li>发布状态(可以是： unknown, deployed, uninstalled, superseded, failed, uninstalling, pending-install, pending-upgrade 或 pending-rollback)</li>
+<li>发布版本修订</li>
+<li>发布版本描述(可以是完成信息或错误信息，需要用–show-desc启用)</li>
+<li>列举版本包含的资源，按类型排序</li>
+<li>最后一次测试套件运行的详细信息（如果使用）</li>
+<li>chart提供的额外的注释</li>
+</ul>
+<pre><code class="shell">$ helm status RELEASE_NAME [flags]
+</code></pre>
+<h2 id="helm-template"><a href="#helm-template" class="headerlink" title="helm template"></a>helm template</h2><p>本地渲染模板</p>
+<p>本地渲染模板并显示输出</p>
+<p>通常在集群中查找或检索到的任何值都可以在本地伪造。另外，没有对chart有效性进行服务端测试。</p>
+<pre><code class="shell">$ helm template [NAME] [CHART] [flags]
+</code></pre>
+<h2 id="helm-test"><a href="#helm-test" class="headerlink" title="helm test"></a>helm test</h2><p>执行发布版本的测试</p>
+<p>测试命令执行发布版本的测试</p>
+<p>该命令使用的参数是部署版本的名称，要运行的测试在已安装的chart中定义。</p>
+<pre><code class="shell">$ helm test [RELEASE] [flags]
+</code></pre>
+<h2 id="helm-uninstall"><a href="#helm-uninstall" class="headerlink" title="helm uninstall"></a>helm uninstall</h2><p>卸载版本</p>
+<p>该命令使用版本名称卸载版本</p>
+<p>会删除与最新版本chart相关的所有资源以及发布历史，释放以供将来使用</p>
+<p>使用 <code>--dry-run</code> 参数查看哪些版本将在不实际卸载的情况下能够被卸载</p>
+<pre><code class="shell">$ helm uninstall RELEASE_NAME [...] [flags]
+</code></pre>
+<h2 id="helm-upgrade"><a href="#helm-upgrade" class="headerlink" title="helm upgrade"></a>helm upgrade</h2><p>升级版本</p>
+<p>该命令将发布升级到新版的 chart。</p>
+<p>升级参数必须是发布和 chart。chart 参数可以是：</p>
+<ul>
+<li>chart引用(‘example&#x2F;mariadb’),对于chart引用，除非使用’–version’参数指定，否则会使用最新版本。</li>
+<li>chart目录路径</li>
+<li>打包的chart或者完整URL。</li>
+</ul>
+<p>要在 chart 中重写 value，需要使用 <code>--values</code> 参数并传一个文件或者从命令行使用 <code>--set</code> 参数传个配置， 要强制字符串值，使用<code>--set-string</code>。在值很大而不想使用 <code>--values</code> 和 <code>--set</code> 的场景中，使用 <code>--set-file</code> 从文件中读取单个的大值。</p>
+<p>可以多次指定 <code>--values</code>&#x2F;<code>-f</code> 参数，最后（最右边）指定的文件优先级最高。比如如果 <code>myvalues.yaml</code> 和 <code>override.yaml</code> 同时包含了名为 <code>Test</code> 的key，<code>override.yaml</code> 中的设置会优先使用：</p>
+<pre><code class="shell">$ helm upgrade -f myvalues.yaml -f override.yaml redis ./redis
+</code></pre>
+<p>可以多次指定 <code>--set</code> 参数，最后（最右边）指定的优先级最高。比如 <code>bar</code> 和 <code>newbar</code> 都设置了一个名为 <code>foo</code> 的可以， <code>newbar</code>的值会优先使用：</p>
+<pre><code class="shell">$ helm upgrade --set foo=bar --set foo=newbar redis ./redis
+helm upgrade [RELEASE] [CHART] [flags]
+</code></pre>
+<h2 id="helm-verify"><a href="#helm-verify" class="headerlink" title="helm verify"></a>helm verify</h2><p>验证给定路径的 chart 已经被签名且有效</p>
+<p>验证指定的 chart 有合法的源文件。</p>
+<p>源文件提供了加密验证保证chart未被篡改，且由可信提供商打包。</p>
+<p>该命令用于验证本地chart，其他一些命令提供 <code>--verify</code> 参数执行同样的验证。要生成一个签名包，使用 <code>helm package --sign</code> 命令。</p>
+<pre><code class="shell">$ helm verify PATH [flags]
+</code></pre>
+<h2 id="helm-version"><a href="#helm-version" class="headerlink" title="helm version"></a>helm version</h2><p>打印客户端版本信息</p>
+<p>显示 Helm 的版本。</p>
+<p>该命令会打印 Helm 的版本描述，输出如下：</p>
+<pre><code class="shell">version.BuildInfo&#123;Version:&quot;v3.2.1&quot;, GitCommit:&quot;fe51cd1e31e6a202cba7dead9552a6d418ded79a&quot;,
+GitTreeState:&quot;clean&quot;, GoVersion:&quot;go1.13.10&quot;&#125;
+</code></pre>
+<ul>
+<li>版本是发布的语义化版本。</li>
+<li>GitCommit 是用于生成此版本提交的SHA</li>
+<li>如果构建二级制包是没有本地代码修改，GitTreeState 就是”干净的”</li>
+<li>GoVersion 是用于编译 Helm 的 Go 版本</li>
+</ul>
+<p>当使用–template参数时，下列属性在模板中是可用的：</p>
+<ul>
+<li><code>.Version</code> 包含了 Helm 的语义化版本</li>
+<li><code>.GitCommit</code> 是 git 的提交</li>
+<li><code>.GitTreeState</code> 是 Helm 构建时的 git 树结构</li>
+<li><code>.GoVersion</code> 包含 Helm 编译时使用的 Go 版本</li>
+</ul>
+<p>比如， <code>--template=&#39;Version: &#123;&#123;.Version&#125;&#125;&#39;</code> 输出 <code>Version: v3.2.1</code>。</p>
+<pre><code class="shell">$ helm version [flags]
+</code></pre>
+<p>[<a target="_blank" rel="noopener" href="https://www.zhaowenyu.com/helm-doc/">label]文章摘自https://www.zhaowenyu.com/helm-doc/[&#x2F;label]</a></p>
+</div><div class="article_tags"><span> <i class="yufont icon-tag"></i> 标签: </span><a href="/tags/helm-kubernetes/">helm kubernetes</a></div></article><div class="article-copyright"><p>标题: <a href="/2023/03/11/Helm/">helm学习笔记</a></p><p> 链接: <a href="/2023/03/11/Helm/">https://zhiyong0389.github.io/2023/03/11/Helm/</a></p><p> 版权声明: 若无特殊标注皆为 智勇 原创版权, 转载请以链接形式注明作者及原始出处</p><p>最后编辑时间: 2023-06-23</p></div><div class="page_turning"><a class="page_up" href="/2023/03/11/Mycat%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB/"
+  style="background-image:url(/assets/images/random/22.jpg)">
+  <div class="inner"><span>上一篇:</span>
+    <p>mycat读写分离</p>
+  </div>
+</a>
+<a class="page_down" href="/2023/03/11/helm-install-wordpress/"
+style="background-image:url(https://help-static-aliyun-doc.aliyuncs.com/assets/img/zh-CN/4780208061/p200143.png" alt="36)">
+<div class="inner"><span>下一篇:</span>
+  <p>helm安装WordPress</p>
+</div>
+</a>
+</div></div></div><div class="article_sidebar left"><div class="author_sidebar sidebar_container"><div class="author_info"><div class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/></div><div class="author_name"><h3><a href="/about">智勇</a></h3><p>不断学习，不断提升！</p></div></div><div class="author_data"><ul><li> <div> <span>46</span><p>文章</p></div></li><li> <div> <span>0</span><p>分类</p></div></li><li> <div> <span>16</span><p>标签</p></div></li></ul></div></div><div class="catalogue sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-feiji"></i>目录</h3><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Helm%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="toc-number">1.</span> <span class="toc-text">Helm核心概念</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1%EF%BC%89Helm"><span class="toc-number">1.1.</span> <span class="toc-text">1）Helm</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2%EF%BC%89Helm-Chart"><span class="toc-number">1.2.</span> <span class="toc-text">2）Helm Chart</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3%EF%BC%89Chart-Release"><span class="toc-number">1.3.</span> <span class="toc-text">3）Chart Release</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4%EF%BC%89Chart-Repository"><span class="toc-number">1.4.</span> <span class="toc-text">4）Chart Repository</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%89%8D%E7%BD%AE%E8%A6%81%E6%B1%82"><span class="toc-number">2.</span> <span class="toc-text">前置要求</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Helm-%E5%AE%89%E8%A3%85%E4%B8%8E%E9%85%8D%E7%BD%AE"><span class="toc-number">3.</span> <span class="toc-text">Helm 安装与配置</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE-Helm-Repository"><span class="toc-number">4.</span> <span class="toc-text">配置 Helm Repository</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AE%89%E8%A3%85-Chart-%E7%A4%BA%E4%BE%8B"><span class="toc-number">5.</span> <span class="toc-text">安装 Chart 示例</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%AE%A1%E7%90%86-Release"><span class="toc-number">6.</span> <span class="toc-text">管理 Release</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Helm-Chart"><span class="toc-number">7.</span> <span class="toc-text">Helm Chart</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Helm-Chart-%E7%BB%84%E6%88%90"><span class="toc-number">7.1.</span> <span class="toc-text">Helm Chart 组成</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%87%E4%BB%B6%E4%BB%8B%E7%BB%8D"><span class="toc-number">7.2.</span> <span class="toc-text">文件介绍</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Helm-Chart-%E4%BB%93%E5%BA%93"><span class="toc-number">8.</span> <span class="toc-text">Helm Chart 仓库</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#Chart-%E4%BB%93%E5%BA%93%E7%BB%93%E6%9E%84"><span class="toc-number">8.1.</span> <span class="toc-text">Chart 仓库结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#index%E6%96%87%E4%BB%B6"><span class="toc-number">8.2.</span> <span class="toc-text">index文件</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%87%AA%E5%BB%BA-Chart-%E4%BB%93%E5%BA%93"><span class="toc-number">9.</span> <span class="toc-text">自建 Chart 仓库</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85%E5%B9%B6%E5%90%AF%E5%8A%A8-Nginx-%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="toc-number">9.1.</span> <span class="toc-text">安装并启动 Nginx 服务器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%B6%E4%BD%9C-Chart-%E6%BA%90"><span class="toc-number">9.2.</span> <span class="toc-text">制作 Chart 源</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%8D%E5%88%B6%E5%88%B0-Web-%E6%9C%8D%E5%8A%A1%E5%99%A8"><span class="toc-number">9.3.</span> <span class="toc-text">复制到 Web 服务器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95%E9%AA%8C%E8%AF%81"><span class="toc-number">9.4.</span> <span class="toc-text">测试验证</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Helm-%E5%91%BD%E4%BB%A4"><span class="toc-number">10.</span> <span class="toc-text">Helm 命令</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-completion"><span class="toc-number">10.1.</span> <span class="toc-text">helm completion</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-chart"><span class="toc-number">10.2.</span> <span class="toc-text">helm chart</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-create"><span class="toc-number">10.3.</span> <span class="toc-text">helm create</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-delete"><span class="toc-number">10.4.</span> <span class="toc-text">helm delete</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-env"><span class="toc-number">10.5.</span> <span class="toc-text">helm env</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-get"><span class="toc-number">10.6.</span> <span class="toc-text">helm get</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-get-all"><span class="toc-number">10.7.</span> <span class="toc-text">helm get all</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-get-hooks"><span class="toc-number">10.8.</span> <span class="toc-text">helm get hooks</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-get-manifest"><span class="toc-number">10.9.</span> <span class="toc-text">helm get manifest</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-get-notes"><span class="toc-number">10.10.</span> <span class="toc-text">helm get notes</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-get-values"><span class="toc-number">10.11.</span> <span class="toc-text">helm get values</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-history"><span class="toc-number">10.12.</span> <span class="toc-text">helm history</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-install"><span class="toc-number">10.13.</span> <span class="toc-text">helm install</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-lint"><span class="toc-number">10.14.</span> <span class="toc-text">helm lint</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-list"><span class="toc-number">10.15.</span> <span class="toc-text">helm list</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-package"><span class="toc-number">10.16.</span> <span class="toc-text">helm package</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-plugin"><span class="toc-number">10.17.</span> <span class="toc-text">helm plugin</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-plugin-install"><span class="toc-number">10.18.</span> <span class="toc-text">helm plugin install</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-plugin-list"><span class="toc-number">10.19.</span> <span class="toc-text">helm plugin list</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-plugin-uninstall"><span class="toc-number">10.20.</span> <span class="toc-text">helm plugin uninstall</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-plugin-update"><span class="toc-number">10.21.</span> <span class="toc-text">helm plugin update</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link"><span class="toc-number">11.</span> <span class="toc-text"></span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-pull"><span class="toc-number">11.1.</span> <span class="toc-text">helm pull</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-repo"><span class="toc-number">11.2.</span> <span class="toc-text">helm repo</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-repo-add"><span class="toc-number">11.3.</span> <span class="toc-text">helm repo add</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-repo-index"><span class="toc-number">11.4.</span> <span class="toc-text">helm repo index</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-repo-list"><span class="toc-number">11.5.</span> <span class="toc-text">helm repo list</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-repo-remove"><span class="toc-number">11.6.</span> <span class="toc-text">helm repo remove</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-repo-update"><span class="toc-number">11.7.</span> <span class="toc-text">helm repo update</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-rollback"><span class="toc-number">11.8.</span> <span class="toc-text">helm rollback</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-search"><span class="toc-number">11.9.</span> <span class="toc-text">helm search</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-search-hub"><span class="toc-number">11.10.</span> <span class="toc-text">helm search hub</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-search-repo"><span class="toc-number">11.11.</span> <span class="toc-text">helm search repo</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-show"><span class="toc-number">11.12.</span> <span class="toc-text">helm show</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-show-all"><span class="toc-number">11.13.</span> <span class="toc-text">helm show all</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-show-chart"><span class="toc-number">11.14.</span> <span class="toc-text">helm show chart</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-show-crds"><span class="toc-number">11.15.</span> <span class="toc-text">helm show crds</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-show-readme"><span class="toc-number">11.16.</span> <span class="toc-text">helm show readme</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-show-values"><span class="toc-number">11.17.</span> <span class="toc-text">helm show values</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-status"><span class="toc-number">11.18.</span> <span class="toc-text">helm status</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-template"><span class="toc-number">11.19.</span> <span class="toc-text">helm template</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-test"><span class="toc-number">11.20.</span> <span class="toc-text">helm test</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-uninstall"><span class="toc-number">11.21.</span> <span class="toc-text">helm uninstall</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-upgrade"><span class="toc-number">11.22.</span> <span class="toc-text">helm upgrade</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-verify"><span class="toc-number">11.23.</span> <span class="toc-text">helm verify</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#helm-version"><span class="toc-number">11.24.</span> <span class="toc-text">helm version</span></a></li></ol></li></ol></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-24gl-folderOpen"></i>分类</h3><div class="archive_lists"><ul class="category-list"></ul></div></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-tag"></i>标签</h3><a href="/tags/AWS/" style="font-size: 20px;">AWS</a> <a href="/tags/Kubernetes/" style="font-size: 18px;">Kubernetes</a> <a href="/tags/ServiceMesh/" style="font-size: 16px;">ServiceMesh</a> <a href="/tags/helm-kubernetes/" style="font-size: 16px;">helm kubernetes</a> <a href="/tags/helm-k8s/" style="font-size: 17px;">helm,k8s</a> <a href="/tags/hexo-github%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" style="font-size: 19px;">hexo+github搭建博客</a> <a href="/tags/kubernetes/" style="font-size: 19px;">kubernetes</a> <a href="/tags/linux/" style="font-size: 17px;">linux</a> <a href="/tags/mycat-linux/" style="font-size: 16px;">mycat linux</a> <a href="/tags/mysql/" style="font-size: 16px;">mysql</a> <a href="/tags/openstack/" style="font-size: 17px;">openstack</a> <a href="/tags/openstack-%E4%BA%91%E8%AE%A1%E7%AE%97/" style="font-size: 17px;">openstack 云计算</a> <a href="/tags/springcloud-java/" style="font-size: 16px;">springcloud java</a> <a href="/tags/springcloud-java-%E5%BE%AE%E6%9C%8D%E5%8A%A1/" style="font-size: 16px;">springcloud java 微服务</a> <a href="/tags/zookeeper-Hadoop/" style="font-size: 16px;">zookeeper Hadoop</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93-mysql/" style="font-size: 16px;">数据库 mysql</a></div></div></div><footer class="footer"> <div class="footer_bottom"><div class="footer_box"><div class="copy"><span>主题</span><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn">Hexo</a><span>模板</span><a target="_blank" rel="noopener" href="https://jihulab.com/douzhiyong/hexo-theme-monie">Monie</a></div><div class="copy"><span>© 2023<a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">豫ICP备2023007869号-1</a></span></div></div></div></footer><html><head></head><body><span id="span"></span><script type="text/javascript">function runtime(){
+        // 初始时间，日/月/年 时:分:秒
+        X = new Date("01/01/2023 8:32:00");
+        Y = new Date();
+        T = (Y.getTime()-X.getTime());
+        M = 24*60*60*1000;
+        a = T/M;
+        A = Math.floor(a);
+        b = (a-A)*24;
+        B = Math.floor(b);
+        c = (b-B)*60;
+        C = Math.floor((b-B)*60);
+        D = Math.floor((c-C)*60);
+        //信息写入到DIV中
+        span.innerHTML = "本站勉强运行: "+A+"天"+B+"小时"+C+"分"+D+"秒"
+      }
+      setInterval(runtime, 1000);
+</script></body></html><a target="_blank" href="http://www.freecdn.pw/?zzwz" title="免费云加速（FreeCDN），为您免费提供网站加速和网站防御（DDOS、CC攻击）" alt="免费云加速（FreeCDN），为您免费提供网站加速和网站防御（DDOS、CC攻击）">本站由免费云加速（FreeCDN）提供网站加速和攻击防御服务</a>      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"> </script><script src="/assets/lib/prettify/prettify.js"> </script><script src="/assets/lib/fancybox/fancybox.js"> </script><script src="/assets/js/app.js"> </script></div></body></html>

@@ -1,0 +1,195 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="shortcut icon" href="/assets/imgs/favicon.ico" type="image/x-icon"><title>根据不同场景调节HPA扩缩容灵敏度 | 智勇</title><meta name="keywords" content="kubernetes"><meta name="keywords" content="记录个人学习生活"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_3435803_wadmwlqwhps.css"><link rel="stylesheet" href="/style/index.css"><link rel="stylesheet" href="/assets/lib/prettify/prettify.css"><link rel="stylesheet" href="/assets/lib/fancybox/fancybox.css"><meta name="generator" content="Hexo 6.3.0"></head><body><div id="app"><header class="header yu13_p_30" id="header"><div class="header_left"><h1 class="yu13_logo"><a id="logo" href="/">智勇</a></h1></div><div class="header_right"><div class="header_search yu13_cursor yu13_hover" id="search"><i class="yufont icon-sousuo"></i></div><div class="line yu13_p_10"></div><nav class="header_nav"><ul class="nav"><li class="menu_nav"><a href="/"><i class="fas"></i><span> 首页</span></a></li><li class="menu_nav"><a href="/archives"><i class="fas"></i><span> 归档</span></a></li><li class="menu_nav"><a href="/categorys"><i class="fas"></i><span> 分类</span></a></li><li class="menu_nav"><a href="/tags"><i class="fas"></i><span> 标签</span></a></li><li class="menu_nav"><a href="/links"><i class="fas"></i><span> 友情链接</span></a></li></ul></nav></div></header><div class="article_topbg" style="background-image: url('/assets/imgs/top_bg.jpg')"><div class="topbg_container"><h1 class="title">根据不同场景调节HPA扩缩容灵敏度</h1><div class="info"><div class="article_meta"><div class="left"><span class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/><a href="/about">智勇</a></span><span><i class="yufont icon-yingyong"></i><span>暂无分类</span></span><span><i class="yufont icon-rili"></i>2023-1-18</span></div></div></div></div></div><div class="container log_container clearfix"><div class="article_content left"> <div class="article_main"><article class="content"><div class="content_text article_text"> <h2 id="HPA-v2beta2-版本开始支持调节扩缩容速率"><a href="#HPA-v2beta2-版本开始支持调节扩缩容速率" class="headerlink" title="HPA v2beta2 版本开始支持调节扩缩容速率"></a>HPA v2beta2 版本开始支持调节扩缩容速率</h2><p>在 K8S 1.18之前，HPA 扩容是无法调整灵敏度的：</p>
+<ul>
+<li>对于缩容，由 <code>kube-controller-manager</code> 的 <code>--horizontal-pod-autoscaler-downscale-stabilization-window</code> 参数控制缩容时间窗口，默认 5 分钟，即负载减小后至少需要等 5 分钟才会缩容。</li>
+<li>对于扩容，由 hpa controller 固定的算法、硬编码的常量因子来控制扩容速度，无法自定义。</li>
+</ul>
+<p>这样的设计逻辑导致用户无法自定义 HPA 的扩缩容速率，而不同的业务场景对于扩容灵敏度要求可能是不一样的，如：</p>
+<ol>
+<li>对于有流量突发的关键业务，在需要的时候应该快速扩容（即便可能不需要，以防万一），但缩容要慢（防止另一个流量高峰）。</li>
+<li>处理关键数据的应用，数据量飙升时它们应该尽快扩容以减少数据处理时间，数据量降低时应尽快缩小规模以降低成本，数据量的短暂抖动导致不必要的频繁扩缩是可以接受的。</li>
+<li>处理常规数据&#x2F;网络流量的业务，不是很重要，它们可能会以一般的方式扩大和缩小规模，以减少抖动。</li>
+</ol>
+<p>HPA 在 K8S 1.18迎来了一次更新，在之前 v2beta2版本上新增了扩缩容灵敏度的控制，不过版本号依然保持 v2beta2不变。</p>
+<h2 id="原理与误区"><a href="#原理与误区" class="headerlink" title="原理与误区"></a>原理与误区</h2><p>HPA 在进行扩缩容时，先是由固定的算法计算出期望副本数：</p>
+<p>期望副本数 &#x3D; ceil[当前副本数 * (当前指标 &#x2F; 期望指标)]</p>
+<p>其中“当前指标 &#x2F; 期望指标”的比例如果接近1 (在容忍度范围内，默认为0.1，即比例在0.9~1.1之间)，则不进行伸缩，避免抖动导致频繁扩缩容。</p>
+<blockquote>
+<p>说明：</p>
+<p>容忍度是由 <code>kube-controller-manager</code> 参数 <code>--horizontal-pod-autoscaler-tolerance</code> 决定，默认是0.1，即10%。</p>
+</blockquote>
+<p>本文要介绍的扩缩容速率调节，不是指要调整期望副本数的算法，它并不会加大或缩小扩缩容比例或数量，仅是控制扩缩容的速率，实现的效果是：控制 HPA 在自定义时间内最大允许扩容&#x2F;缩容自定义比例&#x2F;数量的 Pod。</p>
+<h2 id="如何使用"><a href="#如何使用" class="headerlink" title="如何使用"></a>如何使用</h2><p>本次更新在 HPA Spec 下新增了一个 <code>behavior</code> 字段，下面有 <code>scaleUp</code> 和 <code>scaleDown</code> 两个字段分别控制扩容和缩容的行为，详情见 <a target="_blank" rel="noopener" href="https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.24/#hpascalingrules-v2beta2-autoscaling">官方 API 文档</a>。</p>
+<h4 id="使用示例"><a href="#使用示例" class="headerlink" title="使用示例"></a>使用示例</h4><pre><code class="yaml">apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: web
+spec:
+  minReplicas: 1
+  maxReplicas: 1000
+  metrics:
+  - pods:
+      metric:
+        name: k8s_pod_rate_cpu_core_used_limit
+      target:
+        averageValue: &quot;80&quot;
+        type: AverageValue
+    type: Pods
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: web
+  behavior: # 这里是重点
+    scaleDown:
+      stabilizationWindowSeconds: 300 # 需要缩容时，先观察 5 分钟，如果一直持续需要缩容才执行缩容
+      policies:
+      - type: Percent
+        value: 100 # 允许全部缩掉
+        periodSeconds: 15
+    scaleUp:
+      stabilizationWindowSeconds: 0 # 需要扩容时，立即扩容
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 15 # 每 15s 最大允许扩容当前 1 倍数量的 Pod
+      - type: Pods
+        value: 4
+        periodSeconds: 15 # 每 15s 最大允许扩容 4 个 Pod
+      selectPolicy: Max # 使用以上两种扩容策略中算出来扩容 Pod 数量最大的
+</code></pre>
+<h4 id="使用说明"><a href="#使用说明" class="headerlink" title="使用说明"></a>使用说明</h4><ul>
+<li>以上 <code>behavior</code> 配置是默认的，即如果不配置，会默认加上。</li>
+<li><code>scaleUp</code> 和 <code>scaleDown</code> 都可以配置1个或多个策略，最终扩缩时用哪个策略，取决于 <code>selectPolicy</code>。</li>
+<li><code>selectPolicy</code> 默认是 <code>Max</code>，即扩缩时，评估多个策略算出来的结果，最终选取扩缩 Pod 数量最多的那个策略的结果。</li>
+<li><code>stabilizationWindowSeconds</code> 是稳定窗口时长，即需要指标高于或低于阈值，并持续这个窗口的时长才会真正执行扩缩，以防止抖动导致频繁扩缩容。扩容时，稳定窗口默认为0，即立即扩容；缩容时，稳定窗口默认为5分钟。</li>
+<li><code>policies</code> 中定义扩容或缩容策略，<code>type</code> 的值可以是 <code>Pods</code> 或 <code>Percent</code>，表示每 <code>periodSeconds</code> 时间范围内，允许扩缩容的最大副本数或比例。</li>
+</ul>
+<h2 id="场景与示例"><a href="#场景与示例" class="headerlink" title="场景与示例"></a>场景与示例</h2><h3 id="快速扩容"><a href="#快速扩容" class="headerlink" title="快速扩容"></a>快速扩容</h3><p>当您的应用需要快速扩容时，可以使用类似如下的 HPA 配置：</p>
+<pre><code class="yaml">behavior:
+  scaleUp:
+    policies:
+    - type: Percent
+      value: 900
+      periodSeconds: 15 # 每 15s 最多允许扩容 9 倍于当前副本数
+</code></pre>
+<p>上面的配置表示扩容时立即新增当前9倍数量的副本数，当然也不能超过 <code>maxReplicas</code> 的限制。<br>假如一开始只有1个Pod，如果遭遇流量突发，且指标持续超阈值9倍以上，它将以飞快的速度进行扩容，扩容时 Pod 数量变化趋势如下：</p>
+<pre><code>1 -&gt; 10 -&gt; 100 -&gt; 1000
+</code></pre>
+<p>没有配置缩容策略，将等待全局默认的缩容时间窗口（默认5分钟）后开始缩容。</p>
+<h3 id="快速扩容，缓慢缩容"><a href="#快速扩容，缓慢缩容" class="headerlink" title="快速扩容，缓慢缩容"></a>快速扩容，缓慢缩容</h3><p>如果流量高峰过了，并发量骤降，如果用默认的缩容策略，等几分钟后 Pod 数量也会随之骤降，如果 Pod 缩容后突然又来一个流量高峰，虽然可以快速扩容，但扩容的过程毕竟还是需要一定时间的，如果流量高峰足够高，在这段时间内还是可能造成后端处理能力跟不上，导致部分请求失败。这时候我们可以为 HPA 加上缩容策略，HPA <code>behavior</code> 配置示例如下：</p>
+<pre><code class="yaml">behavior:
+  scaleUp:
+    policies:
+    - type: Percent
+      value: 900
+      periodSeconds: 15 # 每 15s 最多允许扩容 9 倍于当前副本数
+  scaleDown:
+    policies:
+    - type: Pods
+      value: 1
+      periodSeconds: 600 # 每 10 分钟最多只允许缩掉 1 个 Pod
+</code></pre>
+<p>上面示例中增加了 <code>scaleDown</code> 的配置，指定缩容时每10分钟才缩掉1个 Pod，大大降低了缩容速度，缩容时的 Pod 数量变化趋势如下：</p>
+<pre><code>1000 -&gt; … (10 min later) -&gt; 999
+</code></pre>
+<p>这个可以让关键业务在可能有流量突发的情况下保持处理能力，避免流量高峰导致部分请求失败。</p>
+<h3 id="缓慢扩容"><a href="#缓慢扩容" class="headerlink" title="缓慢扩容"></a>缓慢扩容</h3><p>如果想要您的应用不太关键，希望扩容时不要太敏感，可以让它扩容平稳缓慢一点，为 HPA 加入下面的 <code>behavior</code>：</p>
+<pre><code class="yaml">behavior:
+  scaleUp:
+    policies:
+    - type: Pods
+      value: 1 
+      periodSeconds: 300 # 每 5 分钟最多只允许扩容 1 个 Pod
+</code></pre>
+<p>假如一开始只有1个 Pod，指标一直持续超阈值，扩容时它的 Pod 数量变化趋势如下：</p>
+<pre><code>1 -&gt; 2 -&gt; 3 -&gt; 4
+</code></pre>
+<h3 id="禁止自动缩容"><a href="#禁止自动缩容" class="headerlink" title="禁止自动缩容"></a>禁止自动缩容</h3><p>如果应用非常关键，希望扩容后不自动缩容，需要人工干预或其它自己开发的 controller 来判断缩容条件，可以使用类型如下的 <code>behavior</code> 配置来禁止自动缩容：</p>
+<pre><code class="yaml">behavior:
+  scaleDown:
+    selectPolicy: Disabled
+</code></pre>
+<h3 id="延长缩容时间窗口"><a href="#延长缩容时间窗口" class="headerlink" title="延长缩容时间窗口"></a>延长缩容时间窗口</h3><p>缩容默认时间窗口是5分钟，如果我们需要延长时间窗口以避免一些流量毛刺造成的异常，可以指定下缩容的时间窗口，<code>behavior</code> 配置示例如下：</p>
+<pre><code class="yaml">behavior:
+  scaleDown:
+    stabilizationWindowSeconds: 600 # 等待 10 分钟再开始缩容
+    policies:
+    - type: Pods
+      value: 5 
+      periodSeconds: 600 # 每 10 分钟最多只允许缩掉 5 个 Pod
+</code></pre>
+<p>上面的示例表示当负载降下来时，会等待600s (10分钟) 再缩容，每10分钟最多只允许缩掉5个 Pod。</p>
+<h3 id="延长扩容时间窗口"><a href="#延长扩容时间窗口" class="headerlink" title="延长扩容时间窗口"></a>延长扩容时间窗口</h3><p>有些应用经常会有数据毛刺导致频繁扩容，而扩容出来的 Pod 可能会浪费资源。例如数据处理管道的场景，需要的副本数取决于队列中的事件数量，当队列中堆积了大量事件时，我们希望可以快速扩容，但又不希望太灵敏，因为可能只是短时间内的事件堆积，即使不扩容也可以很快处理掉。</p>
+<p>默认的扩容算法会在较短的时间内扩容，针对这种场景我们可以给扩容增加一个时间窗口以避免毛刺导致扩容带来的资源浪费，<code>behavior</code> 配置示例如下：</p>
+<pre><code class="yaml">behavior:
+  scaleUp:
+    stabilizationWindowSeconds: 300 # 扩容前等待 5 分钟的时间窗口
+    policies:
+    - type: Pods
+      value: 20 
+      periodSeconds: 60 # 每分钟最多只允许扩容 20 个 Pod
+</code></pre>
+<p>上面的示例表示扩容时，需要先等待5分钟的时间窗口，如果在这段时间内指标又降下来了就不再扩容，如果一直持续超过阈值才扩容，并且每分钟最多只允许扩容20个 Pod。</p>
+<h2 id="常见问题"><a href="#常见问题" class="headerlink" title="常见问题"></a>常见问题</h2><h3 id="为什么用-v2beta2创建的-HPA，创建后获取到的-yaml-版本是-v1或-v2beta1"><a href="#为什么用-v2beta2创建的-HPA，创建后获取到的-yaml-版本是-v1或-v2beta1" class="headerlink" title="为什么用 v2beta2创建的 HPA，创建后获取到的 yaml 版本是 v1或 v2beta1?"></a>为什么用 v2beta2创建的 HPA，创建后获取到的 yaml 版本是 v1或 v2beta1?</h3><p><img src="https://qcloudimg.tencent-cloud.cn/raw/2e380e3078195ab287d3a1d957d58322.png"><br>这是因为 HPA 有多个 apiVersion 版本:</p>
+<pre><code>kubectl api-versions | grep autoscaling
+autoscaling/v1
+autoscaling/v2beta1
+autoscaling/v2beta2
+</code></pre>
+<p>以任意一种版本创建，都可以以任意版本获取（自动转换）。</p>
+<p>如果是用 kubectl 获取，kubectl 在进行 API discovery 时，会缓存 apiserver 返回的各种资源与版本信息，有些资源存在多个版本，在 get 时如果不指定版本，会使用默认版本获取，对于 HPA，默认是 v1。如果是通过一些平台的界面获取，取决于平台的实现方式，若用腾讯云容器服务控制台，默认用 v2beta1版本展示：</p>
+<p><img src="https://qcloudimg.tencent-cloud.cn/raw/6c6ff39ce8b11c9b9e10e0472a5671b6.png"></p>
+<h3 id="如何使用-v2beta2版本获取或编辑？"><a href="#如何使用-v2beta2版本获取或编辑？" class="headerlink" title="如何使用 v2beta2版本获取或编辑？"></a>如何使用 v2beta2版本获取或编辑？</h3><p>指定包含版本信息的完整资源名即可：</p>
+<pre><code class="shell">kubectl get horizontalpodautoscaler.v2beta2.autoscaling php-apache -o yaml
+# kubectl edit horizontalpodautoscaler.v2beta2.autoscaling php-apache
+</code></pre>
+<h3 id="配置快速扩容，为什么快不起来"><a href="#配置快速扩容，为什么快不起来" class="headerlink" title="配置快速扩容，为什么快不起来?"></a>配置快速扩容，为什么快不起来?</h3><p>如以下配置：</p>
+<pre><code class="yaml">behavior:
+  scaleUp:
+    policies:
+    - type: Percent
+      value: 900
+      periodSeconds: 10
+</code></pre>
+<p>含义是允许每10秒最大允许扩出9倍于当前数量的 Pod，实测中可能发现压力已经很大了，但扩容却并不快。</p>
+<p>通常原因是计算周期与指标延时：</p>
+<ul>
+<li>期望副本数的计算有个计算周期，默认是15秒（由 <code>kube-controller-manager</code> 的 <code>--horizontal-pod-autoscaler-sync-period</code> 参数决定）。</li>
+<li>每次计算时，都会通过相应的 metrics API 去获取当前监控指标的值，这个返回的值通常不是实时的，对于腾讯云容器服务而言，监控数据是每分钟上报一次；对于自建的 prometheus + prometheus-adapter 而言，监控数据的更新取决于监控数据抓取间隔，prometheus-adapter 的 <code>--metrics-relist-interval</code> 参数决定监控指标刷新周期（从 prometheus 中查询），这两部分时长之和为监控数据更新的最长时间。</li>
+</ul>
+<p>通常都不需要 HPA 极度的灵敏，有一定的延时一般都是可以接受的。如果实在有对灵敏度特别敏感的场景，可以考虑使用 prometheus，缩小监控指标抓取间隔和 prometheus-adapter 的 <code>--metrics-relist-interval</code>。</p>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>本文介绍了如何利用 HPA 的新特性来控制扩缩容的速率，以更好的满足各种不同场景对扩容速度的需求，也提供了常见的几种场景与配置示例，可自行根据自己需求对号入座。</p>
+<h2 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h2><ul>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/zh-cn/docs/tasks/run-application/horizontal-pod-autoscale/">HPA 官方介绍文档</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/kubernetes/enhancements/tree/master/keps/sig-autoscaling/853-configurable-hpa-scale-velocity">控制 HPA 扩容速度的提案</a></li>
+</ul>
+<p>本文转自 <a target="_blank" rel="noopener" href="https://cloud.tencent.com/document/product/457/50660">https://cloud.tencent.com/document/product/457/50660</a>，如有侵权，请联系删除。</p>
+</div><div class="article_tags"><span> <i class="yufont icon-tag"></i> 标签: </span><a href="/tags/kubernetes/">kubernetes</a></div></article><div class="article-copyright"><p>标题: <a href="/2023/01/18/k8s-hpa/">根据不同场景调节HPA扩缩容灵敏度</a></p><p> 链接: <a href="/2023/01/18/k8s-hpa/">https://zhiyong0389.github.io/2023/01/18/k8s-hpa/</a></p><p> 版权声明: 若无特殊标注皆为 智勇 原创版权, 转载请以链接形式注明作者及原始出处</p><p>最后编辑时间: 2023-06-23</p></div><div class="page_turning"><a class="page_up" href="/2023/01/15/mirrors-china/"
+  style="background-image:url(https://gsbok.cn/usr/uploads/2022/03/295928993.jpg)">
+  <div class="inner"><span>上一篇:</span>
+    <p>国内开源镜像站点分享</p>
+  </div>
+</a>
+<a class="page_down" href="/2023/02/05/markdown/"
+style="background-image:url(https://i.328888.xyz/2023/01/28/jCai3.png" alt="demo)">
+<div class="inner"><span>下一篇:</span>
+  <p>Markdown基础语法（typora为例）</p>
+</div>
+</a>
+</div></div></div><div class="article_sidebar left"><div class="author_sidebar sidebar_container"><div class="author_info"><div class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/></div><div class="author_name"><h3><a href="/about">智勇</a></h3><p>不断学习，不断提升！</p></div></div><div class="author_data"><ul><li> <div> <span>46</span><p>文章</p></div></li><li> <div> <span>0</span><p>分类</p></div></li><li> <div> <span>16</span><p>标签</p></div></li></ul></div></div><div class="catalogue sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-feiji"></i>目录</h3><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#HPA-v2beta2-%E7%89%88%E6%9C%AC%E5%BC%80%E5%A7%8B%E6%94%AF%E6%8C%81%E8%B0%83%E8%8A%82%E6%89%A9%E7%BC%A9%E5%AE%B9%E9%80%9F%E7%8E%87"><span class="toc-number">1.</span> <span class="toc-text">HPA v2beta2 版本开始支持调节扩缩容速率</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8E%9F%E7%90%86%E4%B8%8E%E8%AF%AF%E5%8C%BA"><span class="toc-number">2.</span> <span class="toc-text">原理与误区</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8"><span class="toc-number">3.</span> <span class="toc-text">如何使用</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E7%A4%BA%E4%BE%8B"><span class="toc-number">3.0.1.</span> <span class="toc-text">使用示例</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E"><span class="toc-number">3.0.2.</span> <span class="toc-text">使用说明</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9C%BA%E6%99%AF%E4%B8%8E%E7%A4%BA%E4%BE%8B"><span class="toc-number">4.</span> <span class="toc-text">场景与示例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BF%AB%E9%80%9F%E6%89%A9%E5%AE%B9"><span class="toc-number">4.1.</span> <span class="toc-text">快速扩容</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BF%AB%E9%80%9F%E6%89%A9%E5%AE%B9%EF%BC%8C%E7%BC%93%E6%85%A2%E7%BC%A9%E5%AE%B9"><span class="toc-number">4.2.</span> <span class="toc-text">快速扩容，缓慢缩容</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%BC%93%E6%85%A2%E6%89%A9%E5%AE%B9"><span class="toc-number">4.3.</span> <span class="toc-text">缓慢扩容</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%A6%81%E6%AD%A2%E8%87%AA%E5%8A%A8%E7%BC%A9%E5%AE%B9"><span class="toc-number">4.4.</span> <span class="toc-text">禁止自动缩容</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BB%B6%E9%95%BF%E7%BC%A9%E5%AE%B9%E6%97%B6%E9%97%B4%E7%AA%97%E5%8F%A3"><span class="toc-number">4.5.</span> <span class="toc-text">延长缩容时间窗口</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%BB%B6%E9%95%BF%E6%89%A9%E5%AE%B9%E6%97%B6%E9%97%B4%E7%AA%97%E5%8F%A3"><span class="toc-number">4.6.</span> <span class="toc-text">延长扩容时间窗口</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="toc-number">5.</span> <span class="toc-text">常见问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8-v2beta2%E5%88%9B%E5%BB%BA%E7%9A%84-HPA%EF%BC%8C%E5%88%9B%E5%BB%BA%E5%90%8E%E8%8E%B7%E5%8F%96%E5%88%B0%E7%9A%84-yaml-%E7%89%88%E6%9C%AC%E6%98%AF-v1%E6%88%96-v2beta1"><span class="toc-number">5.1.</span> <span class="toc-text">为什么用 v2beta2创建的 HPA，创建后获取到的 yaml 版本是 v1或 v2beta1?</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A6%82%E4%BD%95%E4%BD%BF%E7%94%A8-v2beta2%E7%89%88%E6%9C%AC%E8%8E%B7%E5%8F%96%E6%88%96%E7%BC%96%E8%BE%91%EF%BC%9F"><span class="toc-number">5.2.</span> <span class="toc-text">如何使用 v2beta2版本获取或编辑？</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE%E5%BF%AB%E9%80%9F%E6%89%A9%E5%AE%B9%EF%BC%8C%E4%B8%BA%E4%BB%80%E4%B9%88%E5%BF%AB%E4%B8%8D%E8%B5%B7%E6%9D%A5"><span class="toc-number">5.3.</span> <span class="toc-text">配置快速扩容，为什么快不起来?</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%8F%E7%BB%93"><span class="toc-number">6.</span> <span class="toc-text">小结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">7.</span> <span class="toc-text">参考资料</span></a></li></ol></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-24gl-folderOpen"></i>分类</h3><div class="archive_lists"><ul class="category-list"></ul></div></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-tag"></i>标签</h3><a href="/tags/AWS/" style="font-size: 20px;">AWS</a> <a href="/tags/Kubernetes/" style="font-size: 18px;">Kubernetes</a> <a href="/tags/ServiceMesh/" style="font-size: 16px;">ServiceMesh</a> <a href="/tags/helm-kubernetes/" style="font-size: 16px;">helm kubernetes</a> <a href="/tags/helm-k8s/" style="font-size: 17px;">helm,k8s</a> <a href="/tags/hexo-github%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" style="font-size: 19px;">hexo+github搭建博客</a> <a href="/tags/kubernetes/" style="font-size: 19px;">kubernetes</a> <a href="/tags/linux/" style="font-size: 17px;">linux</a> <a href="/tags/mycat-linux/" style="font-size: 16px;">mycat linux</a> <a href="/tags/mysql/" style="font-size: 16px;">mysql</a> <a href="/tags/openstack/" style="font-size: 17px;">openstack</a> <a href="/tags/openstack-%E4%BA%91%E8%AE%A1%E7%AE%97/" style="font-size: 17px;">openstack 云计算</a> <a href="/tags/springcloud-java/" style="font-size: 16px;">springcloud java</a> <a href="/tags/springcloud-java-%E5%BE%AE%E6%9C%8D%E5%8A%A1/" style="font-size: 16px;">springcloud java 微服务</a> <a href="/tags/zookeeper-Hadoop/" style="font-size: 16px;">zookeeper Hadoop</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93-mysql/" style="font-size: 16px;">数据库 mysql</a></div></div></div><footer class="footer"> <div class="footer_bottom"><div class="footer_box"><div class="copy"><span>主题</span><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn">Hexo</a><span>模板</span><a target="_blank" rel="noopener" href="https://jihulab.com/douzhiyong/hexo-theme-monie">Monie</a></div><div class="copy"><span>© 2023<a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">豫ICP备2023007869号-1</a></span></div></div></div></footer><html><head></head><body><span id="span"></span><script type="text/javascript">function runtime(){
+        // 初始时间，日/月/年 时:分:秒
+        X = new Date("01/01/2023 8:32:00");
+        Y = new Date();
+        T = (Y.getTime()-X.getTime());
+        M = 24*60*60*1000;
+        a = T/M;
+        A = Math.floor(a);
+        b = (a-A)*24;
+        B = Math.floor(b);
+        c = (b-B)*60;
+        C = Math.floor((b-B)*60);
+        D = Math.floor((c-C)*60);
+        //信息写入到DIV中
+        span.innerHTML = "本站勉强运行: "+A+"天"+B+"小时"+C+"分"+D+"秒"
+      }
+      setInterval(runtime, 1000);
+</script></body></html><a target="_blank" href="http://www.freecdn.pw/?zzwz" title="免费云加速（FreeCDN），为您免费提供网站加速和网站防御（DDOS、CC攻击）" alt="免费云加速（FreeCDN），为您免费提供网站加速和网站防御（DDOS、CC攻击）">本站由免费云加速（FreeCDN）提供网站加速和攻击防御服务</a>      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"> </script><script src="/assets/lib/prettify/prettify.js"> </script><script src="/assets/lib/fancybox/fancybox.js"> </script><script src="/assets/js/app.js"> </script></div></body></html>

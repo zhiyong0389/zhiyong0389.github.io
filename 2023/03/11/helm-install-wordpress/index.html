@@ -1,0 +1,147 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="shortcut icon" href="/assets/imgs/favicon.ico" type="image/x-icon"><title>helm安装WordPress | 智勇</title><meta name="keywords" content="helm,k8s"><meta name="keywords" content="记录个人学习生活"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_3435803_wadmwlqwhps.css"><link rel="stylesheet" href="/style/index.css"><link rel="stylesheet" href="/assets/lib/prettify/prettify.css"><link rel="stylesheet" href="/assets/lib/fancybox/fancybox.css"><meta name="generator" content="Hexo 6.3.0"></head><body><div id="app"><header class="header yu13_p_30" id="header"><div class="header_left"><h1 class="yu13_logo"><a id="logo" href="/">智勇</a></h1></div><div class="header_right"><div class="header_search yu13_cursor yu13_hover" id="search"><i class="yufont icon-sousuo"></i></div><div class="line yu13_p_10"></div><nav class="header_nav"><ul class="nav"><li class="menu_nav"><a href="/"><i class="fas"></i><span> 首页</span></a></li><li class="menu_nav"><a href="/archives"><i class="fas"></i><span> 归档</span></a></li><li class="menu_nav"><a href="/categorys"><i class="fas"></i><span> 分类</span></a></li><li class="menu_nav"><a href="/tags"><i class="fas"></i><span> 标签</span></a></li><li class="menu_nav"><a href="/links"><i class="fas"></i><span> 友情链接</span></a></li></ul></nav></div></header><div class="article_topbg" style="background-image: url('/assets/imgs/top_bg.jpg')"><div class="topbg_container"><h1 class="title">helm安装WordPress</h1><div class="info"><div class="article_meta"><div class="left"><span class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/><a href="/about">智勇</a></span><span><i class="yufont icon-yingyong"></i><span>暂无分类</span></span><span><i class="yufont icon-rili"></i>2023-3-11</span></div></div></div></div></div><div class="container log_container clearfix"><div class="article_content left"> <div class="article_main"><article class="content"><div class="content_text article_text"> <p>本文介绍如何通过Helm CLI部署WordPress应用。</p>
+<h2 id="前提条件"><a href="#前提条件" class="headerlink" title="前提条件"></a>前提条件</h2><ul>
+<li>已创建一个ACK集群。具体操作，请参见<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/95108.htm#task-skz-qwk-qfb">创建Kubernetes托管版集群</a>。</li>
+<li>已通过kubectl连接到Kubernetes托管版集群。具体操作，请参见<a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/86494.htm#task-ubf-lhg-vdb">通过kubectl连接Kubernetes集群</a>。</li>
+</ul>
+<h2 id="安装配置阿里云CLI和kubectl"><a href="#安装配置阿里云CLI和kubectl" class="headerlink" title="安装配置阿里云CLI和kubectl"></a>安装配置阿里云CLI和kubectl</h2><ul>
+<li>安装Helm。您可以选择以下三种方式：</li>
+<li>通过源码或二进制方式安装，请参见<a target="_blank" rel="noopener" href="https://helm.sh/docs/intro/install/">Installing Helm</a>。</li>
+<li>通过执行以下脚本安装。</li>
+</ul>
+<pre><code>curl -sSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+</code></pre>
+<ul>
+<li>通过包管理器工具安装。</li>
+<li>OS X安装：请参见<a target="_blank" rel="noopener" href="https://brew.sh/">Homebrew</a>，安装包管理工具后，执行以下命令安装Helm。</li>
+</ul>
+<pre><code>brew install helm
+</code></pre>
+<ul>
+<li>Windows 安装：请参考<a target="_blank" rel="noopener" href="https://chocolatey.org/">Chocolatey</a>，安装包管理工具后，执行以下命令安装Helm。</li>
+</ul>
+<pre><code>choco install kubernetes-helm
+</code></pre>
+<ul>
+<li>配置Helm Repo。</li>
+<li>执行以下命令配置稳定版Repo。</li>
+</ul>
+<pre><code>helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+</code></pre>
+<ul>
+<li>执行以下命令搜索Repo。</li>
+</ul>
+<pre><code>helm search repo stable
+</code></pre>
+<ul>
+<li>安装和设置kubectl客户端，详情请参见<a target="_blank" rel="noopener" href="https://kubernetes.io/docs/tasks/tools/install-kubectl/">Install and Set Up kubectl</a>。</li>
+</ul>
+<h2 id="部署WordPress"><a href="#部署WordPress" class="headerlink" title="部署WordPress"></a>部署WordPress</h2><ol>
+<li>执行以下命令，添加WordPress官方Repo地址。</li>
+</ol>
+<pre><code>helm repo add bitnami https://charts.bitnami.com/bitnami
+</code></pre>
+<ol start="2">
+<li>执行以下命令部署WordPress。</li>
+</ol>
+<pre><code>helm install wordpress bitnami/wordpress \
+   --set mariadb.primary.persistence.enabled=true \
+   --set mariadb.primary.persistence.storageClass=alicloud-disk-ssd \
+   --set mariadb.primary.persistence.size=20Gi \
+   --set persistence.enabled=false                        
+</code></pre>
+<p><strong>说明</strong></p>
+<ul>
+<li><p>为了实现数据的持久化，mariadb使用持久化存储卷保存数据。</p>
+</li>
+<li><p>持久化存储选用阿里云SSD云盘，大小为20 GiB，并通过配置StorageClassName自动化创建。</p>
+</li>
+<li><p>WordPress不需要进行数据持久化，数据卷persistence.enabled可配置为false。</p>
+<p>系统输出类似以下结果，表示已经部署完成。</p>
+</li>
+</ul>
+<pre><code>NAME: wordpress
+    LAST DEPLOYED: Tue Sep  8 10:37:05 2020
+    NAMESPACE: default
+    STATUS: deployed
+    REVISION: 1
+NOTES:
+** Please be patient while the chart is being deployed **
+    
+    Your WordPress site can be accessed through the following DNS name from within your cluster:
+    
+        wordpress.default.svc.cluster.local (port 80)
+    
+    To access your WordPress site from outside the cluster follow the steps below:
+    
+    1. Get the WordPress URL by running these commands:
+    
+      NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+            Watch the status with: &#39;kubectl get svc --namespace default -w wordpress&#39;
+    
+       export SERVICE_IP=$(kubectl get svc --namespace default wordpress --template &quot;&#123;&#123; range (index .status.loadBalancer.ingress 0) &#125;&#125;&#123;&#123;.&#125;&#125;&#123;&#123; end &#125;&#125;&quot;)
+       echo &quot;WordPress URL: http://$SERVICE_IP/&quot;
+       echo &quot;WordPress Admin URL: http://$SERVICE_IP/admin&quot;
+    
+    2. Open a browser and access WordPress using the obtained URL.
+    
+    3. Login with the following credentials below to see your blog:
+    
+      echo Username: user
+      echo Password: $(kubectl get secret --namespace default wordpress -o jsonpath=&quot;&#123;.data.wordpress-password&#125;&quot; | base64 --decode)
+                            
+</code></pre>
+<h2 id="访问WordPress"><a href="#访问WordPress" class="headerlink" title="访问WordPress"></a>访问WordPress</h2><ol>
+<li>安装Helm成功后，根据部署提示，执行以下命令获取访问IP地址。</li>
+</ol>
+<pre><code>kubectl get svc --namespace default wordpress-acs-sample --template &quot;&#123;&#123; range (index .status.loadBalancer.ingress 0) &#125;&#125;&#123;&#123;.&#125;&#125;&#123;&#123; end &#125;&#125;&quot;
+</code></pre>
+<p>系统输出类似以下结果：</p>
+<pre><code>192.168.171.110  
+</code></pre>
+<ol start="2">
+<li>执行以下命令获取admin访问密码。</li>
+</ol>
+<pre><code>kubectl get secret --namespace default wordpress-ack-wordpress-sample -o jsonpath=&quot;&#123;.data.wordpress-password&#125;&quot; | base64 --decode
+</code></pre>
+<p>预期输出：</p>
+<pre><code>K*****X**7
+</code></pre>
+<ol start="3">
+<li>在地址栏中输入<code>&lt;IP地址&gt;/login</code>访问WordPress应用，然后使用用户名admin和访问密码登录admin界面。</li>
+</ol>
+<p><img src="https://help-static-aliyun-doc.aliyuncs.com/assets/img/zh-CN/4780208061/p200143.png" alt="36"></p>
+<h2 id="删除应用"><a href="#删除应用" class="headerlink" title="删除应用"></a>删除应用</h2><p>您可以执行以下命令删除部署的WordPress。</p>
+<pre><code>helm delete wordpress
+release &quot;wordpress&quot; uninstalled
+</code></pre>
+<p>本文转自 <a target="_blank" rel="noopener" href="https://help.aliyun.com/document_detail/194631.html">https://help.aliyun.com/document_detail&#x2F;194631.html</a>，如有侵权，请联系删除。</p>
+</div><div class="article_tags"><span> <i class="yufont icon-tag"></i> 标签: </span><a href="/tags/helm-k8s/">helm,k8s</a></div></article><div class="article-copyright"><p>标题: <a href="/2023/03/11/helm-install-wordpress/">helm安装WordPress</a></p><p> 链接: <a href="/2023/03/11/helm-install-wordpress/">https://zhiyong0389.github.io/2023/03/11/helm-install-wordpress/</a></p><p> 版权声明: 若无特殊标注皆为 智勇 原创版权, 转载请以链接形式注明作者及原始出处</p><p>最后编辑时间: 2023-06-23</p></div><div class="page_turning"><a class="page_up" href="/2023/03/11/Helm/"
+  style="background-image:url(/assets/images/random/13.jpg)">
+  <div class="inner"><span>上一篇:</span>
+    <p>helm学习笔记</p>
+  </div>
+</a>
+<a class="page_down" href="/2023/03/11/helm-chart-hub/"
+style="background-image:url(/assets/images/random/33.jpg)">
+<div class="inner"><span>下一篇:</span>
+  <p>本地搭建helm的chart仓库</p>
+</div>
+</a>
+</div></div></div><div class="article_sidebar left"><div class="author_sidebar sidebar_container"><div class="author_info"><div class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/></div><div class="author_name"><h3><a href="/about">智勇</a></h3><p>不断学习，不断提升！</p></div></div><div class="author_data"><ul><li> <div> <span>46</span><p>文章</p></div></li><li> <div> <span>0</span><p>分类</p></div></li><li> <div> <span>16</span><p>标签</p></div></li></ul></div></div><div class="catalogue sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-feiji"></i>目录</h3><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E6%8F%90%E6%9D%A1%E4%BB%B6"><span class="toc-number">1.</span> <span class="toc-text">前提条件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85%E9%85%8D%E7%BD%AE%E9%98%BF%E9%87%8C%E4%BA%91CLI%E5%92%8Ckubectl"><span class="toc-number">2.</span> <span class="toc-text">安装配置阿里云CLI和kubectl</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%83%A8%E7%BD%B2WordPress"><span class="toc-number">3.</span> <span class="toc-text">部署WordPress</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AE%BF%E9%97%AEWordPress"><span class="toc-number">4.</span> <span class="toc-text">访问WordPress</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%A0%E9%99%A4%E5%BA%94%E7%94%A8"><span class="toc-number">5.</span> <span class="toc-text">删除应用</span></a></li></ol></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-24gl-folderOpen"></i>分类</h3><div class="archive_lists"><ul class="category-list"></ul></div></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-tag"></i>标签</h3><a href="/tags/AWS/" style="font-size: 20px;">AWS</a> <a href="/tags/Kubernetes/" style="font-size: 18px;">Kubernetes</a> <a href="/tags/ServiceMesh/" style="font-size: 16px;">ServiceMesh</a> <a href="/tags/helm-kubernetes/" style="font-size: 16px;">helm kubernetes</a> <a href="/tags/helm-k8s/" style="font-size: 17px;">helm,k8s</a> <a href="/tags/hexo-github%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" style="font-size: 19px;">hexo+github搭建博客</a> <a href="/tags/kubernetes/" style="font-size: 19px;">kubernetes</a> <a href="/tags/linux/" style="font-size: 17px;">linux</a> <a href="/tags/mycat-linux/" style="font-size: 16px;">mycat linux</a> <a href="/tags/mysql/" style="font-size: 16px;">mysql</a> <a href="/tags/openstack/" style="font-size: 17px;">openstack</a> <a href="/tags/openstack-%E4%BA%91%E8%AE%A1%E7%AE%97/" style="font-size: 17px;">openstack 云计算</a> <a href="/tags/springcloud-java/" style="font-size: 16px;">springcloud java</a> <a href="/tags/springcloud-java-%E5%BE%AE%E6%9C%8D%E5%8A%A1/" style="font-size: 16px;">springcloud java 微服务</a> <a href="/tags/zookeeper-Hadoop/" style="font-size: 16px;">zookeeper Hadoop</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93-mysql/" style="font-size: 16px;">数据库 mysql</a></div></div></div><footer class="footer"> <div class="footer_bottom"><div class="footer_box"><div class="copy"><span>主题</span><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn">Hexo</a><span>模板</span><a target="_blank" rel="noopener" href="https://jihulab.com/douzhiyong/hexo-theme-monie">Monie</a></div><div class="copy"><span>© 2023<a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">豫ICP备2023007869号-1</a></span></div></div></div></footer><html><head></head><body><span id="span"></span><script type="text/javascript">function runtime(){
+        // 初始时间，日/月/年 时:分:秒
+        X = new Date("01/01/2023 8:32:00");
+        Y = new Date();
+        T = (Y.getTime()-X.getTime());
+        M = 24*60*60*1000;
+        a = T/M;
+        A = Math.floor(a);
+        b = (a-A)*24;
+        B = Math.floor(b);
+        c = (b-B)*60;
+        C = Math.floor((b-B)*60);
+        D = Math.floor((c-C)*60);
+        //信息写入到DIV中
+        span.innerHTML = "本站勉强运行: "+A+"天"+B+"小时"+C+"分"+D+"秒"
+      }
+      setInterval(runtime, 1000);
+</script></body></html><a target="_blank" href="http://www.freecdn.pw/?zzwz" title="免费云加速（FreeCDN），为您免费提供网站加速和网站防御（DDOS、CC攻击）" alt="免费云加速（FreeCDN），为您免费提供网站加速和网站防御（DDOS、CC攻击）">本站由免费云加速（FreeCDN）提供网站加速和攻击防御服务</a>      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"> </script><script src="/assets/lib/prettify/prettify.js"> </script><script src="/assets/lib/fancybox/fancybox.js"> </script><script src="/assets/js/app.js"> </script></div></body></html>

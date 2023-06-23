@@ -1,0 +1,529 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="shortcut icon" href="/assets/imgs/favicon.ico" type="image/x-icon"><title>kubernetes运维题目 | 智勇</title><meta name="keywords" content="kubernetes"><meta name="keywords" content="记录个人学习生活"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_3435803_wadmwlqwhps.css"><link rel="stylesheet" href="/style/index.css"><link rel="stylesheet" href="/assets/lib/prettify/prettify.css"><link rel="stylesheet" href="/assets/lib/fancybox/fancybox.css"><meta name="generator" content="Hexo 6.3.0"></head><body><div id="app"><header class="header yu13_p_30" id="header"><div class="header_left"><h1 class="yu13_logo"><a id="logo" href="/">智勇</a></h1></div><div class="header_right"><div class="header_search yu13_cursor yu13_hover" id="search"><i class="yufont icon-sousuo"></i></div><div class="line yu13_p_10"></div><nav class="header_nav"><ul class="nav"><li class="menu_nav"><a href="/"><i class="fas"></i><span> 首页</span></a></li><li class="menu_nav"><a href="/archives"><i class="fas"></i><span> 归档</span></a></li><li class="menu_nav"><a href="/categorys"><i class="fas"></i><span> 分类</span></a></li><li class="menu_nav"><a href="/tags"><i class="fas"></i><span> 标签</span></a></li><li class="menu_nav"><a href="/links"><i class="fas"></i><span> 友情链接</span></a></li></ul></nav></div></header><div class="article_topbg" style="background-image: url('/assets/imgs/top_bg.jpg')"><div class="topbg_container"><h1 class="title">kubernetes运维题目</h1><div class="info"><div class="article_meta"><div class="left"><span class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/><a href="/about">智勇</a></span><span><i class="yufont icon-yingyong"></i><span>暂无分类</span></span><span><i class="yufont icon-rili"></i>2023-3-12</span></div></div></div></div></div><div class="container log_container clearfix"><div class="article_content left"> <div class="article_main"><article class="content"><div class="content_text article_text"> <h1 id="docker-compose编排"><a href="#docker-compose编排" class="headerlink" title="docker-compose编排"></a>docker-compose编排</h1><h2 id="wordpress"><a href="#wordpress" class="headerlink" title="wordpress"></a>wordpress</h2><pre><code class="yaml">version: &#39;2&#39;
+services:
+  mysql:
+    image: 192.168.1.10/library/mysql:latest
+    expose: 
+    - &quot;3306&quot;
+    restart: always
+    environment:
+    - MYSQL_ROOT_PASSWORD=123456
+
+  wordpress:
+    image: 192.168.1.10/library/wordpress:latest
+    ports:
+    - &quot;80:80&quot;
+    restart: always
+    environment:
+    - WORDPRESS_DB_HOST=mysql
+    - WORDPRESS_DB_USER=root
+    - WORDPRESS_DB_PASSWORD=123456
+</code></pre>
+<h2 id="owncloud"><a href="#owncloud" class="headerlink" title="owncloud"></a>owncloud</h2><pre><code class="yaml">owncloud:
+  image: 192.168.1.10/library/owncloud
+  restart: always
+  ports:
+  - &quot;80:80&quot;
+  links:
+  - mysql:mysql
+
+mysql:
+  image: 192.168.1.10/library/mysql
+  restart: always
+  environment:
+  - MYSQL_ROOT_PASSWORD=123456
+</code></pre>
+<h2 id="lychee"><a href="#lychee" class="headerlink" title="lychee"></a>lychee</h2><pre><code class="yaml">mysql:
+  image: 192.168.1.10/library/mysql
+  restart: always
+  ports:
+  - &quot;3306:3306&quot;
+  environment:
+  - MYSQL_ROOT_PASSWORD=123456
+  - MYSQL_DATABASE=lychee
+  - MYSQL_USER=lychee
+  - MYSQL_PASSWORD=123456
+
+lychee:
+  image: 192.168.1.10/library/lychee
+  restart: always
+  ports:
+  - &quot;80:80&quot;
+  links:
+  - &quot;mysql:mysql&quot;
+  environment:
+  - WONCLOUD_DB_NAME: lychee
+  - WONCLOUD_DB_USER: lychee
+  - WONCLOUD_DB_PASSWORD: 123456
+</code></pre>
+<h2 id="启动-x2F-停止命令"><a href="#启动-x2F-停止命令" class="headerlink" title="启动&#x2F;停止命令"></a>启动&#x2F;停止命令</h2><pre><code class="shell">docker-compose -f docker-compose.yml up
+docker-compose -f docker-compos.yaml down
+docker rm $(docker ps -qa)
+</code></pre>
+<h1 id="资源创建"><a href="#资源创建" class="headerlink" title="资源创建"></a>资源创建</h1><h2 id="kubectl-explain-DaemonSet-–recursive-可查看模板"><a href="#kubectl-explain-DaemonSet-–recursive-可查看模板" class="headerlink" title="kubectl explain DaemonSet –recursive 可查看模板"></a>kubectl explain DaemonSet –recursive 可查看模板</h2><h2 id="kubectl-api-resources-可以查看资源的kind"><a href="#kubectl-api-resources-可以查看资源的kind" class="headerlink" title="kubectl api-resources 可以查看资源的kind"></a>kubectl api-resources 可以查看资源的kind</h2><h2 id="pod管理"><a href="#pod管理" class="headerlink" title="pod管理"></a>pod管理</h2><p>在master节点&#x2F;root目录下编写yaml文件nginx.yaml，具体要求如下：</p>
+<p>（1）Pod名称：nginx-pod；</p>
+<p>（2）命名空间：default；</p>
+<p>（3）容器名称：mynginx；</p>
+<p>（4）镜像：nginx；拉取策略：IfNotPresent；</p>
+<p>（5）容器端口：80。</p>
+<p>（6）并将其调度到节点为disk&#x3D;stat上</p>
+<pre><code class="yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-pod
+spec:
+  nodeSelector:
+    disk: stat
+  containers:
+  - image: 192.168.121.21/library/nginx:latest
+    name: mynginx
+    ports:
+    - containerPort: 80
+    imagePullPolicy: IfNotPresent
+</code></pre>
+<h2 id="Deployment管理"><a href="#Deployment管理" class="headerlink" title="Deployment管理"></a>Deployment管理</h2><p>在master节点&#x2F;root目录下编写yaml文件nginx-deployment.yaml，具体要求如下：</p>
+<p>（1）Deployment名称：nginx-deployment；</p>
+<p>（2）命名空间：default；</p>
+<p>（3）Pod名称：nginx-deployment，副本数：2；</p>
+<p>（4）网络：hostNetwork；</p>
+<p>（5）镜像：nginx；</p>
+<p>（6）容器端口：80</p>
+<p>（7）实现资源限制 :需求内存 300Mi，需求 CPU 300M，限制内存 450Mi，限制 CPU 450M</p>
+<pre><code class="yaml">apiVersion: apps/v1 
+kind: Deployment 
+metadata: 
+  name: nginx-deployment
+  namespace: default 
+spec: 
+  replicas: 2
+  selector: 
+    matchLabels: 
+      app: nginx-deployment 
+  template: 
+    metadata:
+      labels:
+        app: nginx-deployment
+    spec:
+      hostNetwork: true
+      containers:
+      - name: nginx-deployment 
+        image: 192.168.121.21/library/nginx:latest 
+        ports:
+        - containerPort: 80 
+        resources:
+          requests:
+            cpu: 0.3
+            memory: 300Mi
+          limits:
+            cpu: 0.3
+            memory: 300Mi
+</code></pre>
+<h2 id="ReplicaSet管理"><a href="#ReplicaSet管理" class="headerlink" title="ReplicaSet管理"></a>ReplicaSet管理</h2><p>在master节点&#x2F;root目录下编写yaml文件replicaset.yaml，具体要求如下： </p>
+<p>（1）Replicaset名称：nginx； </p>
+<p>（2）命名空间：default； </p>
+<p>（3）副本数：3； </p>
+<p>（4）镜像：nginx。</p>
+<pre><code class="yaml">apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: nginx
+  namespace: default
+spec:
+  replicas: 3
+  selector:
+    app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: 192.168.121.21/library/nginx:latest
+        ports:
+        - contarinerPort: 80
+</code></pre>
+<h2 id="Namespace管理"><a href="#Namespace管理" class="headerlink" title="Namespace管理"></a>Namespace管理</h2><p>在master节点&#x2F;root目录下编写yaml文件my-namespace.yaml，具体要求如下：</p>
+<p>（1）Namespace名称：test。</p>
+<pre><code class="yaml">[root@master ~]# vi my-namespace.yaml 
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test
+</code></pre>
+<h2 id="Service管理"><a href="#Service管理" class="headerlink" title="Service管理"></a>Service管理</h2><p>在master节点&#x2F;root目录下编写yaml文件service-clusterip.yaml，具体要求如下：</p>
+<p>（1）Service名称：service-clusterip；</p>
+<p>（2）命名空间：default；</p>
+<p>（3）集群内部访问端口：80；targetPort: 81；</p>
+<p>（4）Service类型：ClusterIP。</p>
+<pre><code class="yaml">[root@master ~]# vi service-clusterip.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: service-clusterip
+  namespace: default
+spec:
+  ports:
+  - port: 80
+    targetPort: 81
+    protocol: TCP
+  type: ClusterIP
+</code></pre>
+<h2 id="RBAC管理"><a href="#RBAC管理" class="headerlink" title="RBAC管理"></a>RBAC管理</h2><p>在master节点&#x2F;root目录下编写yaml文件role.yaml，具体要求如下：</p>
+<p>（1）Role名称：pod-reader；</p>
+<p>（2）命名空间：default；</p>
+<p>（3）对default命名空间内的Pod拥有get、watch、list的权限。</p>
+<pre><code class="yaml">[root@master ~]# vi role.yaml 
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-reader
+  namespace: default
+rules:
+- apiGroups: [&quot;&quot;]
+  resources: [&quot;pods&quot;]
+  verbs: [&quot;get&quot;,&quot;watch&quot;,&quot;list&quot;]
+</code></pre>
+<h2 id="PV管理"><a href="#PV管理" class="headerlink" title="PV管理"></a>PV管理</h2><p>在master节点&#x2F;root目录下编写yaml文件pv.yaml，具体要求如下：</p>
+<p>（1）PV名称：pv-local；</p>
+<p>（2）命名空间：default；</p>
+<p>（3）回收策略：Delete；</p>
+<p>（4）访问模式：RWO；</p>
+<p>（5）挂载路径：node节点&#x2F;data&#x2F;k8s&#x2F;localpv；</p>
+<p>（6）卷容量：5G。</p>
+<pre><code class="yaml">[root@master ~]# vi pv.yaml 
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-local
+  namespace: default
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: local-storage
+  local:
+    path: /data/k8s/localpv
+  nodeAffinity: #定义应用在哪一个节点上(亲和)
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - 192.168.100.20
+</code></pre>
+<h2 id="HPA管理"><a href="#HPA管理" class="headerlink" title="HPA管理"></a>HPA管理</h2><p>在master节点&#x2F;root目录下编写yaml文件hpa.yaml，具体要求如下：</p>
+<p>（1）HPA名称：frontend-scaler；</p>
+<p>（2）命名空间：default；</p>
+<p>（3）副本数伸缩范围：3–10；</p>
+<p>（4）期望每个Pod的CPU使用率为50%。</p>
+<pre><code class="yaml">[root@master ~]# vi hpa.yaml 
+apiVersion: autoscaling/v1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frontend-scaler
+  namespace: default
+spec:
+  minReplicas: 3
+  maxReplicas: 10
+  scaleTargetRef:
+    apiVersion: v1
+    kind: Pod
+    name: test
+  targetCPUUtilizationPercentage: 50
+</code></pre>
+<h2 id="Secrets管理"><a href="#Secrets管理" class="headerlink" title="Secrets管理"></a>Secrets管理</h2><p>在master节点&#x2F;root目录下编写yaml文件secret.yaml，具体要求如下：</p>
+<p>（1）Secret名称：mysecret；</p>
+<p>（2）命名空间：default；</p>
+<p>（3）类型：Opaque；</p>
+<p>（4）username: YWRtaW4&#x3D;；password: MWYyZDFlMmU2N2Rm。</p>
+<pre><code class="yaml">[root@master ~]# vi secret.yaml 
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysecret
+  namespace: default
+type: Opaque
+data:
+  username: YWRtaW4=
+  password: MWYyZDFlMmU2N2Rm
+</code></pre>
+<h2 id="NetworkPolicy管理"><a href="#NetworkPolicy管理" class="headerlink" title="NetworkPolicy管理"></a>NetworkPolicy管理</h2><p>在master节点&#x2F;root目录下编写yaml文件network-policy-deny.yaml，具体要求如下：</p>
+<p>（1）NetworkPolicy名称：default-deny；</p>
+<p>（2）命名空间：default；</p>
+<p>（3）默认禁止所有入Pod流量。</p>
+<pre><code class="yaml">[root@master ~]# vi network-policy-deny.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny
+  namespace: default
+spec:
+  podSelector: &#123;&#125;
+  policyTypes:
+  - Ingress
+</code></pre>
+<h2 id="健康检查"><a href="#健康检查" class="headerlink" title="健康检查"></a>健康检查</h2><p>在master节点&#x2F;root目录下编写yaml文件liveness_httpget.yaml，具体要求如下： </p>
+<p>（1）Pod名称：liveness-http； </p>
+<p>（2）命名空间：default； </p>
+<p>（3）镜像：nginx；端口：80； </p>
+<p>（4）容器启动时运行命令“echo Healty &gt; &#x2F;usr&#x2F;share&#x2F;nginx&#x2F;html&#x2F;healthz”； </p>
+<p>（5）httpGet请求的资源路径为&#x2F;healthz，地址默认为Pod IP，端口使用容器中定义的端口名称HTTP；</p>
+<p> （6）启动后延时30秒开始运行检测； </p>
+<p>（7）每隔3秒执行一次liveness probe。</p>
+<pre><code class="yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: liveness-http
+  namespace: default
+spec:
+  containers:
+  - name: nginx
+    image: 192.168.100.10/library/nginx:latest
+    ports:
+    - containerPort: 80
+    args:
+    - /bin/sh
+    - -c
+    - echo Healty &gt; /usr/share/nginx/html/healthz
+    livenessProbe:
+      httpGet:
+        path: /healthz
+        port: http
+      initialDelaySeconds: 30
+      periodSeconds: 3
+</code></pre>
+<h2 id="ResourceQuota管理"><a href="#ResourceQuota管理" class="headerlink" title="ResourceQuota管理"></a>ResourceQuota管理</h2><p>创建命名空间quota-example，在master节点&#x2F;root目录下编写yaml文件quota.yaml，具体要求如下：</p>
+<p>（1）ResourceQuota名称：compute-resources；</p>
+<p>（2）命名空间：quota-example；</p>
+<p>（3）命名空间内所有Pod数量不超过4；</p>
+<p>（4）命名空间内所有容器内存申请总和不得超过1G；</p>
+<p>（5）命名空间内所有内存限制不得超过2G；</p>
+<p>（6）命名空间内所有容器申请的CPU不得超过1；</p>
+<p>（7）命名空间内所有容器限制的CPU不得超过2。</p>
+<pre><code class="yaml">[root@master ~]# kubectl create ns quota-example
+namespace/quota-example created
+
+[root@master ~]# vi quota.yaml
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: compute-resources
+  namespace: quota-example
+spec:
+  hard:
+    pods: &quot;4&quot;
+    requests.cpu: &quot;1&quot;
+    requests.memory: 1Gi
+    limits.cpu: &quot;2&quot;
+    limits.memory: 2Gi
+</code></pre>
+<h2 id="Volume管理"><a href="#Volume管理" class="headerlink" title="Volume管理"></a>Volume管理</h2><p>在master节点&#x2F;root目录下编写yaml文件emptydir.yaml，具体要求如下：</p>
+<p>（1）Pod名称：pod-emptydir；</p>
+<p>（2）命名空间：default；</p>
+<p>（3）镜像：nginx；</p>
+<p>（4）Volume类型：emptyDir；名称data-volume；</p>
+<p>（5）挂载路径：&#x2F;data。</p>
+<pre><code class="yaml">[root@master ~]# vi emptydir.yaml 
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-emptydir
+  namespace: default
+spec:
+  containers:
+  - name: nginx 
+    image: nginx:latest
+    ports:
+    - containerPort: 80
+    volumeMounts:
+    - name: data-volume
+      mountPath: /data
+  volumes:
+  - name: data-volume
+    emptyDir: &#123;&#125;
+</code></pre>
+<h2 id="DaemonSet管理"><a href="#DaemonSet管理" class="headerlink" title="DaemonSet管理"></a>DaemonSet管理</h2><p>在master节点&#x2F;root目录下编写yaml文件daemonset.yaml，具体要求如下：</p>
+<p>（1）DaemonSet名称：fluentd；</p>
+<p>（2）命名空间：default；</p>
+<p>（3）镜像：quay.io&#x2F;fluentd_elasticsearch&#x2F;fluentd:v2.5.2；</p>
+<p>（4）容器名称：fluentd-container01；</p>
+<p>（5）将Pod调度到非污点的节点上。</p>
+<pre><code class="yaml">[root@master ~]# vi daemonset.yaml 
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: fluentd
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      tolerations:
+      - key: node-role.kubernetes.io/master 
+        operator: Exists
+        effect: NoSchedule
+      containers:
+      - name: fluentd-container01
+        image: quay.io/fluentd_elasticsearch/fluentd:v2.5.2
+</code></pre>
+<h2 id="列出环境内所有的pv并以name字段排序"><a href="#列出环境内所有的pv并以name字段排序" class="headerlink" title="列出环境内所有的pv并以name字段排序"></a>列出环境内所有的pv并以name字段排序</h2><pre><code class="shell">Kubectl get pv --stor-by=.metadata.name
+Kubectl get pv --stor-by=.spec.capacity.storage (以capacity排序)
+</code></pre>
+<h2 id="指定在命名空间内创建一个Pod名称为test，内含四个指定的镜像nginx、redis、memcached、busybox。"><a href="#指定在命名空间内创建一个Pod名称为test，内含四个指定的镜像nginx、redis、memcached、busybox。" class="headerlink" title="指定在命名空间内创建一个Pod名称为test，内含四个指定的镜像nginx、redis、memcached、busybox。"></a>指定在命名空间内创建一个Pod名称为test，内含四个指定的镜像nginx、redis、memcached、busybox。</h2><pre><code class="shell">kubectl run test --image=nginx --image=redis --image=memcached \
+&gt; --image=busybox --restart=Never -n &lt;namespace&gt;
+</code></pre>
+<h2 id="创建一个Pod名称为test，镜像为nginx，Volume名称cache-volume为挂在在-x2F-data目录下，且Volume是non-Persistent（不持久的）的。"><a href="#创建一个Pod名称为test，镜像为nginx，Volume名称cache-volume为挂在在-x2F-data目录下，且Volume是non-Persistent（不持久的）的。" class="headerlink" title="创建一个Pod名称为test，镜像为nginx，Volume名称cache-volume为挂在在&#x2F;data目录下，且Volume是non-Persistent（不持久的）的。"></a>创建一个Pod名称为test，镜像为nginx，Volume名称cache-volume为挂在在&#x2F;data目录下，且Volume是non-Persistent（不持久的）的。</h2><pre><code class="yaml">apiVersion: v1
+kind: Pod
+metadata:
+  name: test
+spec:
+  containers:
+  - name: test
+    image: nginx
+    volumeMounts:
+    - mountPath: /data
+      name: cache-volume
+  volumes:
+  - name: cache-volume
+    emptyDir: &#123;&#125;
+</code></pre>
+<h2 id="提供一个Pod的yaml，要求添加Init-Container，Init-Container的作用是创建一个空文件，Pod的Containers判断文件是否存在，不存在则退出。"><a href="#提供一个Pod的yaml，要求添加Init-Container，Init-Container的作用是创建一个空文件，Pod的Containers判断文件是否存在，不存在则退出。" class="headerlink" title="提供一个Pod的yaml，要求添加Init Container，Init Container的作用是创建一个空文件，Pod的Containers判断文件是否存在，不存在则退出。"></a>提供一个Pod的yaml，要求添加Init Container，Init Container的作用是创建一个空文件，Pod的Containers判断文件是否存在，不存在则退出。</h2><pre><code class="yaml">apiVersion: v1
+kind: Pod
+metadata: 
+  name: init-demo
+spec:
+  containers:
+  - name: nginx
+    image: busybox:1.28
+    command：[&#39;sh&#39;, &#39;-c&#39;, &#39;if [ ! -e &quot;/opt/myfile&quot;]; then exit;fi;&#39;]
+  initContainers:
+  - name: install
+    image: busybox
+    command: [&#39;sh&#39;, &#39;-c&#39;, &#39;touch /opt/myfile&#39;]
+</code></pre>
+<h2 id="列出Service名为test下的Pod并找出使用CPU使用率最高的一个，将Pod名称写入文件中。"><a href="#列出Service名为test下的Pod并找出使用CPU使用率最高的一个，将Pod名称写入文件中。" class="headerlink" title="列出Service名为test下的Pod并找出使用CPU使用率最高的一个，将Pod名称写入文件中。"></a>列出Service名为test下的Pod并找出使用CPU使用率最高的一个，将Pod名称写入文件中。</h2><pre><code class="shell">Kubectl get svc test -o wide (找到app=xxx)
+Kubectl top pods -l ‘app=xxx’
+</code></pre>
+<h2 id="将deployment为nginx-app的副本数从1变成4。"><a href="#将deployment为nginx-app的副本数从1变成4。" class="headerlink" title="将deployment为nginx-app的副本数从1变成4。"></a>将deployment为nginx-app的副本数从1变成4。</h2><pre><code class="shell">Kubectl scale --replicas=4 deployment nginx-app
+</code></pre>
+<h2 id="创建nginx-app的deployment，使用镜像为nginx-1-11-0-alpine-修改镜像为1-11-3-alpine，并记录升级，再使用回滚，将镜像回滚至nginx-1-11-0-alpine。"><a href="#创建nginx-app的deployment，使用镜像为nginx-1-11-0-alpine-修改镜像为1-11-3-alpine，并记录升级，再使用回滚，将镜像回滚至nginx-1-11-0-alpine。" class="headerlink" title="创建nginx-app的deployment，使用镜像为nginx:1.11.0-alpine,修改镜像为1.11.3-alpine，并记录升级，再使用回滚，将镜像回滚至nginx:1.11.0-alpine。"></a>创建nginx-app的deployment，使用镜像为nginx:1.11.0-alpine,修改镜像为1.11.3-alpine，并记录升级，再使用回滚，将镜像回滚至nginx:1.11.0-alpine。</h2><pre><code class="shell"># 创建nginx-app的deployment
+kubectl run nginx-app --image=nginx:1.11.0-alpine --record #记录
+# 修改镜像，nginx-app为container的名字
+kubectl set image deployment nginx-app nginx-app=nginx:1.11.3-alipne
+# 回滚
+kubectl rollout undo deployment nginx-app
+</code></pre>
+<h2 id="创建Secret名为mysecret，内含有password字段，值为bob，然后在Pod1里使用ENV进行调用，Pod2里使用Volume挂载在-x2F-data下。"><a href="#创建Secret名为mysecret，内含有password字段，值为bob，然后在Pod1里使用ENV进行调用，Pod2里使用Volume挂载在-x2F-data下。" class="headerlink" title="创建Secret名为mysecret，内含有password字段，值为bob，然后在Pod1里使用ENV进行调用，Pod2里使用Volume挂载在&#x2F;data下。"></a>创建Secret名为mysecret，内含有password字段，值为bob，然后在Pod1里使用ENV进行调用，Pod2里使用Volume挂载在&#x2F;data下。</h2><pre><code class="yaml">#将密码值使用base64加密,记录在Notepad里
+echo -n &#39;bob&#39; | base64
+Ym9i
+
+secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysecret
+type: Opaque（不透明）
+data:
+  password: Ym9i
+
+pod1.yaml ###使用env进行调用
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod1
+spec:
+  containers:
+  - name: mycontainer
+    image: redis
+    env:
+    - name: SECRET_PASSWORD
+      valueFrom:
+        secretKeyRef（密钥引用）:
+          name: mysecret
+          key: password
+
+pod2.yaml ###挂载到data目录下
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod1
+spec:
+  containers:
+  - name: mypod
+    image: nginx
+    volumeMounts:
+    - name: mysecret
+      mountPath: &quot;/data&quot;
+      readOnly: true
+  volumes:
+  - name: mysecret
+    secret:
+      secretName: mysecret
+</code></pre>
+<h2 id="使master节点不可调度，并重新分配该节点上的Pod"><a href="#使master节点不可调度，并重新分配该节点上的Pod" class="headerlink" title="使master节点不可调度，并重新分配该节点上的Pod"></a>使master节点不可调度，并重新分配该节点上的Pod</h2><pre><code class="shell">#直接drain（驱逐节点上所有pod）会出错，
+#需要添加--ignore-daemonsets --delete-local-data参数（忽略守护进程--删除本地数据）
+kubectl drain master --ignore-daemonsets --delete-local-data
+</code></pre>
+<h2 id="创建一个pv，类型是hostPath，位于-x2F-data中，大小1G，模式ReadOnlyMany"><a href="#创建一个pv，类型是hostPath，位于-x2F-data中，大小1G，模式ReadOnlyMany" class="headerlink" title="创建一个pv，类型是hostPath，位于&#x2F;data中，大小1G，模式ReadOnlyMany"></a>创建一个pv，类型是hostPath，位于&#x2F;data中，大小1G，模式ReadOnlyMany</h2><pre><code class="yaml">apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-host
+spec:
+  capacity:
+    storage: 1Gi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteMany
+  persistentVolumeReclaimPolicy: Recycle
+  hostPath:
+    path: /data
+</code></pre>
+<h2 id="创建ingress"><a href="#创建ingress" class="headerlink" title="创建ingress"></a>创建ingress</h2><pre><code class="yaml">apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: ingress
+  annotations:
+    kubernetes.io/ingress.class: &quot;nginx&quot;
+spec:
+  backend:
+    serviceName: nginx
+    serverPort: 80
+</code></pre>
+</div><div class="article_tags"><span> <i class="yufont icon-tag"></i> 标签: </span><a href="/tags/kubernetes/">kubernetes</a></div></article><div class="article-copyright"><p>标题: <a href="/2023/03/11/k8s%20%E8%BF%90%E7%BB%B4/">kubernetes运维题目</a></p><p> 链接: <a href="/2023/03/11/k8s%20%E8%BF%90%E7%BB%B4/">https://zhiyong0389.github.io/2023/03/11/k8s%20%E8%BF%90%E7%BB%B4/</a></p><p> 版权声明: 若无特殊标注皆为 智勇 原创版权, 转载请以链接形式注明作者及原始出处</p><p>最后编辑时间: 2023-06-23</p></div><div class="page_turning"><a class="page_up" href="/2023/03/11/mysql-forget-password/"
+  style="background-image:url(http://img2018.cnblogs.com/blog/1826280/201910/1826280-20191022143107277-1604940989.png)">
+  <div class="inner"><span>上一篇:</span>
+    <p>mysql在忘记密码的情况下重置密码</p>
+  </div>
+</a>
+<a class="page_down" href="/2023/03/11/k8s%20%E6%90%AD%E5%BB%BA/"
+style="background-image:url(/assets/images/random/1.jpg)">
+<div class="inner"><span>下一篇:</span>
+  <p>kubernetes基础环境搭建</p>
+</div>
+</a>
+</div></div></div><div class="article_sidebar left"><div class="author_sidebar sidebar_container"><div class="author_info"><div class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/></div><div class="author_name"><h3><a href="/about">智勇</a></h3><p>不断学习，不断提升！</p></div></div><div class="author_data"><ul><li> <div> <span>46</span><p>文章</p></div></li><li> <div> <span>0</span><p>分类</p></div></li><li> <div> <span>16</span><p>标签</p></div></li></ul></div></div><div class="catalogue sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-feiji"></i>目录</h3><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#docker-compose%E7%BC%96%E6%8E%92"><span class="toc-number">1.</span> <span class="toc-text">docker-compose编排</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#wordpress"><span class="toc-number">1.1.</span> <span class="toc-text">wordpress</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#owncloud"><span class="toc-number">1.2.</span> <span class="toc-text">owncloud</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#lychee"><span class="toc-number">1.3.</span> <span class="toc-text">lychee</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%90%AF%E5%8A%A8-x2F-%E5%81%9C%E6%AD%A2%E5%91%BD%E4%BB%A4"><span class="toc-number">1.4.</span> <span class="toc-text">启动&#x2F;停止命令</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%B5%84%E6%BA%90%E5%88%9B%E5%BB%BA"><span class="toc-number">2.</span> <span class="toc-text">资源创建</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#kubectl-explain-DaemonSet-%E2%80%93recursive-%E5%8F%AF%E6%9F%A5%E7%9C%8B%E6%A8%A1%E6%9D%BF"><span class="toc-number">2.1.</span> <span class="toc-text">kubectl explain DaemonSet –recursive 可查看模板</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#kubectl-api-resources-%E5%8F%AF%E4%BB%A5%E6%9F%A5%E7%9C%8B%E8%B5%84%E6%BA%90%E7%9A%84kind"><span class="toc-number">2.2.</span> <span class="toc-text">kubectl api-resources 可以查看资源的kind</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#pod%E7%AE%A1%E7%90%86"><span class="toc-number">2.3.</span> <span class="toc-text">pod管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Deployment%E7%AE%A1%E7%90%86"><span class="toc-number">2.4.</span> <span class="toc-text">Deployment管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ReplicaSet%E7%AE%A1%E7%90%86"><span class="toc-number">2.5.</span> <span class="toc-text">ReplicaSet管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Namespace%E7%AE%A1%E7%90%86"><span class="toc-number">2.6.</span> <span class="toc-text">Namespace管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Service%E7%AE%A1%E7%90%86"><span class="toc-number">2.7.</span> <span class="toc-text">Service管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#RBAC%E7%AE%A1%E7%90%86"><span class="toc-number">2.8.</span> <span class="toc-text">RBAC管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#PV%E7%AE%A1%E7%90%86"><span class="toc-number">2.9.</span> <span class="toc-text">PV管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#HPA%E7%AE%A1%E7%90%86"><span class="toc-number">2.10.</span> <span class="toc-text">HPA管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Secrets%E7%AE%A1%E7%90%86"><span class="toc-number">2.11.</span> <span class="toc-text">Secrets管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#NetworkPolicy%E7%AE%A1%E7%90%86"><span class="toc-number">2.12.</span> <span class="toc-text">NetworkPolicy管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%81%A5%E5%BA%B7%E6%A3%80%E6%9F%A5"><span class="toc-number">2.13.</span> <span class="toc-text">健康检查</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ResourceQuota%E7%AE%A1%E7%90%86"><span class="toc-number">2.14.</span> <span class="toc-text">ResourceQuota管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Volume%E7%AE%A1%E7%90%86"><span class="toc-number">2.15.</span> <span class="toc-text">Volume管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DaemonSet%E7%AE%A1%E7%90%86"><span class="toc-number">2.16.</span> <span class="toc-text">DaemonSet管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%97%E5%87%BA%E7%8E%AF%E5%A2%83%E5%86%85%E6%89%80%E6%9C%89%E7%9A%84pv%E5%B9%B6%E4%BB%A5name%E5%AD%97%E6%AE%B5%E6%8E%92%E5%BA%8F"><span class="toc-number">2.17.</span> <span class="toc-text">列出环境内所有的pv并以name字段排序</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8C%87%E5%AE%9A%E5%9C%A8%E5%91%BD%E5%90%8D%E7%A9%BA%E9%97%B4%E5%86%85%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AAPod%E5%90%8D%E7%A7%B0%E4%B8%BAtest%EF%BC%8C%E5%86%85%E5%90%AB%E5%9B%9B%E4%B8%AA%E6%8C%87%E5%AE%9A%E7%9A%84%E9%95%9C%E5%83%8Fnginx%E3%80%81redis%E3%80%81memcached%E3%80%81busybox%E3%80%82"><span class="toc-number">2.18.</span> <span class="toc-text">指定在命名空间内创建一个Pod名称为test，内含四个指定的镜像nginx、redis、memcached、busybox。</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AAPod%E5%90%8D%E7%A7%B0%E4%B8%BAtest%EF%BC%8C%E9%95%9C%E5%83%8F%E4%B8%BAnginx%EF%BC%8CVolume%E5%90%8D%E7%A7%B0cache-volume%E4%B8%BA%E6%8C%82%E5%9C%A8%E5%9C%A8-x2F-data%E7%9B%AE%E5%BD%95%E4%B8%8B%EF%BC%8C%E4%B8%94Volume%E6%98%AFnon-Persistent%EF%BC%88%E4%B8%8D%E6%8C%81%E4%B9%85%E7%9A%84%EF%BC%89%E7%9A%84%E3%80%82"><span class="toc-number">2.19.</span> <span class="toc-text">创建一个Pod名称为test，镜像为nginx，Volume名称cache-volume为挂在在&#x2F;data目录下，且Volume是non-Persistent（不持久的）的。</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8F%90%E4%BE%9B%E4%B8%80%E4%B8%AAPod%E7%9A%84yaml%EF%BC%8C%E8%A6%81%E6%B1%82%E6%B7%BB%E5%8A%A0Init-Container%EF%BC%8CInit-Container%E7%9A%84%E4%BD%9C%E7%94%A8%E6%98%AF%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E7%A9%BA%E6%96%87%E4%BB%B6%EF%BC%8CPod%E7%9A%84Containers%E5%88%A4%E6%96%AD%E6%96%87%E4%BB%B6%E6%98%AF%E5%90%A6%E5%AD%98%E5%9C%A8%EF%BC%8C%E4%B8%8D%E5%AD%98%E5%9C%A8%E5%88%99%E9%80%80%E5%87%BA%E3%80%82"><span class="toc-number">2.20.</span> <span class="toc-text">提供一个Pod的yaml，要求添加Init Container，Init Container的作用是创建一个空文件，Pod的Containers判断文件是否存在，不存在则退出。</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%97%E5%87%BAService%E5%90%8D%E4%B8%BAtest%E4%B8%8B%E7%9A%84Pod%E5%B9%B6%E6%89%BE%E5%87%BA%E4%BD%BF%E7%94%A8CPU%E4%BD%BF%E7%94%A8%E7%8E%87%E6%9C%80%E9%AB%98%E7%9A%84%E4%B8%80%E4%B8%AA%EF%BC%8C%E5%B0%86Pod%E5%90%8D%E7%A7%B0%E5%86%99%E5%85%A5%E6%96%87%E4%BB%B6%E4%B8%AD%E3%80%82"><span class="toc-number">2.21.</span> <span class="toc-text">列出Service名为test下的Pod并找出使用CPU使用率最高的一个，将Pod名称写入文件中。</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%86deployment%E4%B8%BAnginx-app%E7%9A%84%E5%89%AF%E6%9C%AC%E6%95%B0%E4%BB%8E1%E5%8F%98%E6%88%904%E3%80%82"><span class="toc-number">2.22.</span> <span class="toc-text">将deployment为nginx-app的副本数从1变成4。</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BAnginx-app%E7%9A%84deployment%EF%BC%8C%E4%BD%BF%E7%94%A8%E9%95%9C%E5%83%8F%E4%B8%BAnginx-1-11-0-alpine-%E4%BF%AE%E6%94%B9%E9%95%9C%E5%83%8F%E4%B8%BA1-11-3-alpine%EF%BC%8C%E5%B9%B6%E8%AE%B0%E5%BD%95%E5%8D%87%E7%BA%A7%EF%BC%8C%E5%86%8D%E4%BD%BF%E7%94%A8%E5%9B%9E%E6%BB%9A%EF%BC%8C%E5%B0%86%E9%95%9C%E5%83%8F%E5%9B%9E%E6%BB%9A%E8%87%B3nginx-1-11-0-alpine%E3%80%82"><span class="toc-number">2.23.</span> <span class="toc-text">创建nginx-app的deployment，使用镜像为nginx:1.11.0-alpine,修改镜像为1.11.3-alpine，并记录升级，再使用回滚，将镜像回滚至nginx:1.11.0-alpine。</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BASecret%E5%90%8D%E4%B8%BAmysecret%EF%BC%8C%E5%86%85%E5%90%AB%E6%9C%89password%E5%AD%97%E6%AE%B5%EF%BC%8C%E5%80%BC%E4%B8%BAbob%EF%BC%8C%E7%84%B6%E5%90%8E%E5%9C%A8Pod1%E9%87%8C%E4%BD%BF%E7%94%A8ENV%E8%BF%9B%E8%A1%8C%E8%B0%83%E7%94%A8%EF%BC%8CPod2%E9%87%8C%E4%BD%BF%E7%94%A8Volume%E6%8C%82%E8%BD%BD%E5%9C%A8-x2F-data%E4%B8%8B%E3%80%82"><span class="toc-number">2.24.</span> <span class="toc-text">创建Secret名为mysecret，内含有password字段，值为bob，然后在Pod1里使用ENV进行调用，Pod2里使用Volume挂载在&#x2F;data下。</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%BFmaster%E8%8A%82%E7%82%B9%E4%B8%8D%E5%8F%AF%E8%B0%83%E5%BA%A6%EF%BC%8C%E5%B9%B6%E9%87%8D%E6%96%B0%E5%88%86%E9%85%8D%E8%AF%A5%E8%8A%82%E7%82%B9%E4%B8%8A%E7%9A%84Pod"><span class="toc-number">2.25.</span> <span class="toc-text">使master节点不可调度，并重新分配该节点上的Pod</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AApv%EF%BC%8C%E7%B1%BB%E5%9E%8B%E6%98%AFhostPath%EF%BC%8C%E4%BD%8D%E4%BA%8E-x2F-data%E4%B8%AD%EF%BC%8C%E5%A4%A7%E5%B0%8F1G%EF%BC%8C%E6%A8%A1%E5%BC%8FReadOnlyMany"><span class="toc-number">2.26.</span> <span class="toc-text">创建一个pv，类型是hostPath，位于&#x2F;data中，大小1G，模式ReadOnlyMany</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BAingress"><span class="toc-number">2.27.</span> <span class="toc-text">创建ingress</span></a></li></ol></li></ol></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-24gl-folderOpen"></i>分类</h3><div class="archive_lists"><ul class="category-list"></ul></div></div><div class="sidebar_tags sidebar_container"><h3 class="sidebar_title"><i class="yufont icon-tag"></i>标签</h3><a href="/tags/AWS/" style="font-size: 20px;">AWS</a> <a href="/tags/Kubernetes/" style="font-size: 18px;">Kubernetes</a> <a href="/tags/ServiceMesh/" style="font-size: 16px;">ServiceMesh</a> <a href="/tags/helm-kubernetes/" style="font-size: 16px;">helm kubernetes</a> <a href="/tags/helm-k8s/" style="font-size: 17px;">helm,k8s</a> <a href="/tags/hexo-github%E6%90%AD%E5%BB%BA%E5%8D%9A%E5%AE%A2/" style="font-size: 19px;">hexo+github搭建博客</a> <a href="/tags/kubernetes/" style="font-size: 19px;">kubernetes</a> <a href="/tags/linux/" style="font-size: 17px;">linux</a> <a href="/tags/mycat-linux/" style="font-size: 16px;">mycat linux</a> <a href="/tags/mysql/" style="font-size: 16px;">mysql</a> <a href="/tags/openstack/" style="font-size: 17px;">openstack</a> <a href="/tags/openstack-%E4%BA%91%E8%AE%A1%E7%AE%97/" style="font-size: 17px;">openstack 云计算</a> <a href="/tags/springcloud-java/" style="font-size: 16px;">springcloud java</a> <a href="/tags/springcloud-java-%E5%BE%AE%E6%9C%8D%E5%8A%A1/" style="font-size: 16px;">springcloud java 微服务</a> <a href="/tags/zookeeper-Hadoop/" style="font-size: 16px;">zookeeper Hadoop</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93-mysql/" style="font-size: 16px;">数据库 mysql</a></div></div></div><footer class="footer"> <div class="footer_bottom"><div class="footer_box"><div class="copy"><span>主题</span><a target="_blank" rel="noopener" href="https://hexo.io/zh-cn">Hexo</a><span>模板</span><a target="_blank" rel="noopener" href="https://jihulab.com/douzhiyong/hexo-theme-monie">Monie</a></div><div class="copy"><span>© 2023<a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">豫ICP备2023007869号-1</a></span></div></div></div></footer><html><head></head><body><span id="span"></span><script type="text/javascript">function runtime(){
+        // 初始时间，日/月/年 时:分:秒
+        X = new Date("01/01/2023 8:32:00");
+        Y = new Date();
+        T = (Y.getTime()-X.getTime());
+        M = 24*60*60*1000;
+        a = T/M;
+        A = Math.floor(a);
+        b = (a-A)*24;
+        B = Math.floor(b);
+        c = (b-B)*60;
+        C = Math.floor((b-B)*60);
+        D = Math.floor((c-C)*60);
+        //信息写入到DIV中
+        span.innerHTML = "本站勉强运行: "+A+"天"+B+"小时"+C+"分"+D+"秒"
+      }
+      setInterval(runtime, 1000);
+</script></body></html><a target="_blank" href="http://www.freecdn.pw/?zzwz" title="免费云加速（FreeCDN），为您免费提供网站加速和网站防御（DDOS、CC攻击）" alt="免费云加速（FreeCDN），为您免费提供网站加速和网站防御（DDOS、CC攻击）">本站由免费云加速（FreeCDN）提供网站加速和攻击防御服务</a>      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/jquery.min.js"> </script><script src="/assets/lib/prettify/prettify.js"> </script><script src="/assets/lib/fancybox/fancybox.js"> </script><script src="/assets/js/app.js"> </script></div></body></html>
