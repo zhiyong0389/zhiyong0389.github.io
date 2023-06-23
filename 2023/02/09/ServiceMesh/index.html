@@ -1,16 +1,16 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><link rel="shortcut icon" href="/assets/imgs/favicon.ico" type="image/x-icon"><title>ServiceMesh(服务网格)介绍 | 智勇</title><meta name="keywords" content="ServiceMesh"><meta name="keywords" content="记录个人学习生活"><link rel="stylesheet" href="https://fastly.jsdelivr.net/npm/@fortawesome/fontawesome-free@latest/css/all.min.css"><link rel="stylesheet" href="https://at.alicdn.com/t/c/font_3435803_wadmwlqwhps.css"><link rel="stylesheet" href="/style/index.css"><link rel="stylesheet" href="/assets/lib/prettify/prettify.css"><link rel="stylesheet" href="/assets/lib/fancybox/fancybox.css"><meta name="generator" content="Hexo 6.3.0"></head><body><div id="app"><header class="header yu13_p_30" id="header"><div class="header_left"><h1 class="yu13_logo"><a id="logo" href="/">智勇</a></h1></div><div class="header_right"><div class="header_search yu13_cursor yu13_hover" id="search"><i class="yufont icon-sousuo"></i></div><div class="line yu13_p_10"></div><nav class="header_nav"><ul class="nav"><li class="menu_nav"><a href="/"><i class="fas"></i><span> 首页</span></a></li><li class="menu_nav"><a href="/archives"><i class="fas"></i><span> 归档</span></a></li><li class="menu_nav"><a href="/categorys"><i class="fas"></i><span> 分类</span></a></li><li class="menu_nav"><a href="/tags"><i class="fas"></i><span> 标签</span></a></li><li class="menu_nav"><a href="/links"><i class="fas"></i><span> 友情链接</span></a></li></ul></nav></div></header><div class="article_topbg" style="background-image: url('/assets/imgs/top_bg.jpg')"><div class="topbg_container"><h1 class="title">ServiceMesh(服务网格)介绍</h1><div class="info"><div class="article_meta"><div class="left"><span class="avatar"><img class="yu13_img_rotate" src="/assets/imgs/avatar.png" alt=""/><a href="/about">智勇</a></span><span><i class="yufont icon-yingyong"></i><span>暂无分类</span></span><span><i class="yufont icon-rili"></i>2023-2-9</span></div></div></div></div></div><div class="container log_container clearfix"><div class="article_content left"> <div class="article_main"><article class="content"><div class="content_text article_text"> <h1 id="01-架构的发展历史"><a href="#01-架构的发展历史" class="headerlink" title="01 架构的发展历史"></a>01 架构的发展历史</h1><p><strong>发展历史时间轴</strong></p>
-<p><img src="/./ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588598088789.png" alt="1588598088789"></p>
+<p><img src="/.io//1588598088789.png" alt="1588598088789"></p>
 <h2 id="1-1-单机小型机时代"><a href="#1-1-单机小型机时代" class="headerlink" title="1.1 单机小型机时代"></a>1.1 单机小型机时代</h2><pre><code>第一个计算机网络诞生于1969年，也就是美军的阿帕网，阿帕网能够实现与其它计算机进行联机操作，但是早期仅仅是为了军事目的而服务
 2000年初，中国的网民大约890万，很多人都不知道互联网为何物，因此大多数服务业务单一且简单，采用典型的单机+数据库模式，所有的功能都写在一个应用里并进行集中部署
 </code></pre>
-<p><img src="/./day01.assets/1587454159260.png" alt="1587454159260"></p>
+<p><img src="/.io//1587454159260.png" alt="1587454159260"></p>
 <blockquote>
 <p>论坛业务、聊天室业务、邮箱业务全部都耦合在一台小型机上面，所有的业务数据也都存储在一台数据库上。</p>
 </blockquote>
 <h2 id="1-2-垂直拆分"><a href="#1-2-垂直拆分" class="headerlink" title="1.2 垂直拆分"></a>1.2 垂直拆分</h2><pre><code>随着应用的日益复杂与多样化，开发者对系统的容灾，伸缩以及业务响应能力有了更高的要求，如果小型机和数据库中任何一个出现故障，整个系统都会崩溃，若某个板块的功能需要更新，那么整个系统都需要重新发布，显然，对于业务迅速发展的万物互联网时代是不允许的。
 如何保障可用性的同时快速响应业务的变化，需要将系统进行拆分，将上面的应用拆分出多个子应用。
 </code></pre>
-<p><img src="/./day01.assets/1587454061860.png" alt="1587454061860"></p>
+<p><img src="/.io//1587454061860.png" alt="1587454061860"></p>
 <blockquote>
 <p>优点：应用跟应用解耦，系统容错提高了，也解决了独立应用发布的问题</p>
 <p>应用垂直拆分解决了应用发布的问题，但是随着用户数量的增加，单机的计算能力依旧是杯水车薪</p>
@@ -25,14 +25,14 @@
 </code></pre>
 <pre><code>有了负载均衡之后，后端的应用可以根据流量的大小进行动态扩容，我们称为&quot;水平扩展&quot;
 </code></pre>
-<p><img src="/./ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588312438637.png" alt="1588312438637"></p>
+<p><img src="/.io//1588312438637.png" alt="1588312438637"></p>
 <blockquote>
 <p>阿里巴巴在2008提出去“IOE”，也就是IBM小型机、Oracle数据库，EMC存储，全部改成集群化负载均衡架构，在2013年支付宝最后一台IBM小型机下线</p>
 <p>优点：应用跟应用解耦，系统容错提高了，也解决了独立应用发布的问题，同时可以水平扩展来提供应用的并发量</p>
 </blockquote>
 <h2 id="1-4-服务化改造架构"><a href="#1-4-服务化改造架构" class="headerlink" title="1.4 服务化改造架构"></a>1.4 服务化改造架构</h2><pre><code>虽然系统经过了垂直拆分，但是拆分之后发现在论坛和聊天室中有重复的功能，比如，用户注册、发邮件等等，一旦项目大了，集群部署多了，这些重复的功能无疑会造成资源浪费，所以会把重复功能抽取出来，名字叫&quot;XX服务（Service）&quot;
 </code></pre>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588265625571.png" alt="1588265625571"></p>
+<p><img src="/.io//1588265625571.png" alt="1588265625571"></p>
 <blockquote>
 <p>为了解决服务跟服务如何相互调用，需要一个程序之间的通信协议，所以就有了远程过程调用（RPC），作用就是让服务之间的程序调用变得像本地调用一样的简单</p>
 <p>优点：在前面的架构之上解决了业务重用的问题</p>
@@ -96,11 +96,11 @@
 <ul>
 <li>在很早之前的单体架构中，其实通信问题也是需要写在业务代码中的，那时候怎么解决的呢？</li>
 </ul>
-<p><img src="/day01.assets/1587462497556.png" alt="1587462497556"></p>
+<p><img src="/.io//1587462497556.png" alt="1587462497556"></p>
 <pre><code>解决方案：把网络通信，流量转发等问题放到了计算机网络模型中的TCP/UDP层，也就是非业务功能代码下沉，把这些网络的问题下沉到计算机网络模型当中，也就是网络七层模型
 网络七层模型：应用层、表示层、会话层、传输层、网络层、数据链路层、物理层
 </code></pre>
-<p><img src="/day01.assets/1587462783887.png" alt="1587462783887"></p>
+<p><img src="/.io//1587462783887.png" alt="1587462783887"></p>
 <p><strong>思考：</strong></p>
 <p>我们是否也可以把每个服务配置一个代理，所有通信的问题都交给这个代理去做，就好比大家熟悉的nginx,haproxy其实它们做反向代理把请求转发给其他服务器,也就为 Service Mesh的诞生和功能实现提供了一个解决思路 </p>
 </blockquote>
@@ -111,7 +111,7 @@ Sidecar模式是一种将应用功能从应用本身剥离出来作为单独进�
 <blockquote>
 <p>很多公司借鉴了Proxy模式，推出了Sidecar的产品，比如像Netflix的Prana，蚂蚁金服的SofaMesh</p>
 </blockquote>
-<p><img src="/day01.assets/1587533226466.png" alt="1587533226466"></p>
+<p><img src="/.io//1587533226466.png" alt="1587533226466"></p>
 <blockquote>
 <pre><code>服务业务代码与Sidecar绑定在一起，每个服务都配置了一个Sidecar代理，每个服务所有的流量都经过sidecar,sidecar帮我们屏蔽了通信的细节，我的业务开发人员只需要关注业务就行了，而通信的事情交给sidecar处理
 </code></pre>
@@ -129,7 +129,7 @@ Sidecar模式是一种将应用功能从应用本身剥离出来作为单独进�
 Linkerd很好地结合了Kubernetes所提供的功能，以此为基础，在每个Kubernetes Node上都部署运行一个Linkerd实例，用代理的方式将加入Mesh的Pod通信转接给Linkerd，这样Linkerd就能在通信链路中完成对通信的控制和监控。
 </code></pre>
 <p><strong>Linkerd设计思想</strong></p>
-<p><img src="/day01.assets/1587533995800.png" alt="1587533995800"></p>
+<p><img src="/.io//1587533995800.png" alt="1587533995800"></p>
 <blockquote>
 <p>Linderd的思想跟sidecar很类似，目标也是屏蔽网络通信细节</p>
 </blockquote>
@@ -171,7 +171,7 @@ Linkerd很好地结合了Kubernetes所提供的功能，以此为基础，在每
 <p><strong>什么是控制平面？</strong></p>
 <pre><code>控制平面就是来管理数据平面，也就是管理sideCar
 </code></pre>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588330903686.png" alt="1588330903686"></p>
+<p><img src="/.io//1588330903686.png" alt="1588330903686"></p>
 <p><strong>所以istio既有数据平面也有控制平面</strong></p>
 <p><strong>istio能干什么?</strong></p>
 <pre><code>Automatic load balancing for HTTP, gRPC, WebSocket, and TCP traffic.
@@ -192,7 +192,7 @@ Secure service-to-service communication in a cluster with strong identity-based 
 <p>服务网格：指的是微服务网络应用之间的交互，随着规模和复杂性增加，服务跟服务调用错综复杂</p>
 </blockquote>
 <p><strong>如下图所示</strong></p>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1589347876849.png" alt="1589347876849"></p>
+<p><img src="/.io//1589347876849.png" alt="1589347876849"></p>
 <blockquote>
 <p>如果每一个格子都是一个sidecar数据平面，然后sidecar进行彼此通信，那么servicemech就是来管理每个格子的控制平面,这就是服务网格，从架构层面看起来跟网格很像</p>
 </blockquote>
@@ -215,7 +215,7 @@ Secure service-to-service communication in a cluster with strong identity-based 
 </code></pre>
 </blockquote>
 <h3 id="1-7-7-CNCF云原生组织发展和介绍"><a href="#1-7-7-CNCF云原生组织发展和介绍" class="headerlink" title="1.7.7 CNCF云原生组织发展和介绍"></a>1.7.7 CNCF云原生组织发展和介绍</h3><p><strong>云原生发展历史时间轴</strong></p>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1589352593807.png" alt="1589352593807"></p>
+<p><img src="/.io//1589352593807.png" alt="1589352593807"></p>
 <ul>
 <li>微服务</li>
 </ul>
@@ -334,7 +334,7 @@ Istio是开源的微服务管理、保护和监控框架。Istio为希腊语，�
 <li>蚂蚁金服 sofa Mesh</li>
 </ul>
 <p><strong>代理架构</strong></p>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588412147585.png" alt="1588412147585"></p>
+<p><img src="/.io//1588412147585.png" alt="1588412147585"></p>
 <blockquote>
 <p> 前身是SOFA RPC ，2018年07月正式开源 </p>
 </blockquote>
@@ -342,12 +342,12 @@ Istio是开源的微服务管理、保护和监控框架。Istio为希腊语，�
 <li>腾讯 Tencent Service Mesh</li>
 </ul>
 <p><strong>代理架构</strong></p>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588418151202.png" alt="1588418151202"></p>
+<p><img src="/.io//1588418151202.png" alt="1588418151202"></p>
 <ul>
 <li>华为  CSE Mesher</li>
 </ul>
 <p><strong>代理架构</strong></p>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588418649120.png" alt="1588418649120"></p>
+<p><img src="/.io//1588418649120.png" alt="1588418649120"></p>
 <p><code>总结:</code> 基本上都借鉴了Sidecar、Envoy和Istio等设计思想</p>
 </blockquote>
 <h1 id="02-Istio-基本介绍"><a href="#02-Istio-基本介绍" class="headerlink" title="02 Istio 基本介绍"></a>02 Istio 基本介绍</h1><h2 id="2-1-什么是Istio"><a href="#2-1-什么是Istio" class="headerlink" title="2.1 什么是Istio"></a>2.1 什么是Istio</h2><blockquote>
@@ -360,9 +360,9 @@ Istio是开源的微服务管理、保护和监控框架。Istio为希腊语，�
 Istio有助于降低部署的复杂性，并减轻开发团队的压力。它是一个完全开放源代码的服务网格，透明地分层到现有的分布式应用程序上。它也是一个平台，包括允许它集成到任何日志平台、遥测或策略系统中的api。Istio的多种功能集使我们能够成功、高效地运行分布式微服务体系结构，并提供一种统一的方式来保护、连接和监视微服务。
 </code></pre>
 <p><strong>传统的spring cloud微服务项目</strong></p>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588420918416.png" alt="1588420918416"></p>
+<p><img src="/.io//1588420918416.png" alt="1588420918416"></p>
 <p>**基于Istio架构微服务项目 **</p>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588428082543.png" alt="1588428082543"></p>
+<p><img src="/.io//1588428082543.png" alt="1588428082543"></p>
 <blockquote>
 <p>Istio是基于Sidecar模式、数据平面和控制平台、是主流Service Mesh解决方案。</p>
 </blockquote>
@@ -385,7 +385,7 @@ Istio有助于降低部署的复杂性，并减轻开发团队的压力。它是
 </code></pre>
 <blockquote>
 <p>针对目前的常见业务形态，这里画一个简单的示意图来描述Service Mesh的连接功能</p>
-<p><img src="/day01.assets/1587653293503.png" alt="1587653293503"></p>
+<p><img src="/.io//1587653293503.png" alt="1587653293503"></p>
 <pre><code>从不同的外部用户的角度来看，他们访问的都是同一服务端口，但实际上会因为不同的用户识别，分别访问服务A的不同版本；在网格内部，服务A的版本1可能会访问服务B的两个版本，服务A的版本2则只会访问服务B的版本1；服务B的版本1需要访问外部的云服务，版本2则无此需求。
 在这个简化的模型中，包含了以下诉求：
 ◎ 网格内部的调用（服务A→服务B）；
@@ -426,7 +426,7 @@ Istio有助于降低部署的复杂性，并减轻开发团队的压力。它是
 上述功能通常需要数字证书的支持，这就隐藏了对CA的需求，即需要完成证书的签发、传播和更新业务。
 除了上述核心要求，还存在对认证失败的处理、外部证书（统一 CA）的接入等相关支撑内容。
 </code></pre>
-<h3 id="2-2-3-策略"><a href="#2-2-3-策略" class="headerlink" title="2.2.3 策略"></a>2.2.3 策略</h3><p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1589360817797.png" alt="1589360817797"></p>
+<h3 id="2-2-3-策略"><a href="#2-2-3-策略" class="headerlink" title="2.2.3 策略"></a>2.2.3 策略</h3><p><img src="/.io//1589360817797.png" alt="1589360817797"></p>
 <pre><code>
 
 Istio 通过可动态插拔、可扩展的策略实现访问控制、速率限制、配额管理等功能使得资源在消费者之间公平分配
@@ -454,18 +454,18 @@ Istio 通过可动态插拔、可扩展的策略实现访问控制、速率限�
 <pre><code>在微服务化的过程中，将服务拆分后会发现一堆麻烦事儿，连基本的业务连通都成了问题。在处理一些治理逻辑，比如怎么找到对端的服务实例，怎么选择一个对端实例发出请求，都需要自己写代码来实现。这种方式简单，对外部依赖少，但会导致存在大量的重复代码。所以，微服务越多，重复的代码越多，维护越难；而且，业务代码和治理逻辑耦合，不管是对治理逻辑的全局升级，还是对业务的升级，都要改同一段代码。
 </code></pre>
 <p><strong>如下图所示</strong></p>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588471998440.png" alt="1588471998440"></p>
+<p><img src="/.io//1588471998440.png" alt="1588471998440"></p>
 <p><strong>第2种形态：治理逻辑独立的代码</strong></p>
 <pre><code>在解决第1种形态的问题时，我们很容易想到把治理的公共逻辑抽象成一个公共库，让所有微服务都使用这个公共库。在将这些治理能力包含在开发框架中后，只要是用这种开发框架开发的代码，就包含这种能力，非常典型的这种服务治理框架就是Spring Cloud。这种形态的治理工具在过去一段时间里得到了非常广泛的应用。
 SDK模式虽然在代码上解耦了业务和治理逻辑，但业务代码和 SDK还是要一起编译的，业务代码和治理逻辑还在一个进程内。这就导致几个问题：业务代码必须和 SDK 基于同一种语言，即语言绑定。例如，Spring Cloud等大部分治理框架都基于Java，因此也只适用于 Java 语言开发的服务。经常有客户抱怨自己基于其他语言编写的服务没有对应的治理框架；在治理逻辑升级时，还需要用户的整个服务升级，即使业务逻辑没有改变，这对用户来说是非常不方便的。
 </code></pre>
 <p><strong>如下图所示</strong></p>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588472030398.png" alt="1588472030398"></p>
+<p><img src="/.io//1588472030398.png" alt="1588472030398"></p>
 <p><strong>第3种形态：治理逻辑独立的进程</strong></p>
 <pre><code>SDK模式仍旧侵入了用户的代码，那就再解耦一层，把治理逻辑彻底从用户的业务代码中剥离出来，这就是前面提过的Sidecar模式。显然，在这种形态下，用户的业务代码和治理逻辑都以独立的进程存在，两者的代码和运行都无耦合，这样可以做到与开发语言无关，升级也相互独立。在对已存在的系统进行微服务治理时，只需搭配 Sidecar 即可，对原服务无须做任何修改，并且可以对老系统渐进式升级改造，先对部分服务进行微服务化。
 </code></pre>
 <p><strong>如下图所示</strong></p>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588472077426.png" alt="1588472077426"></p>
+<p><img src="/.io//1588472077426.png" alt="1588472077426"></p>
 <p><strong>总结</strong></p>
 <pre><code>比较以上三种服务治理形态，我们可以看到服务治理组件的位置在持续下沉，对应用的侵入逐渐减少。
 
@@ -476,21 +476,21 @@ SDK模式虽然在代码上解耦了业务和治理逻辑，但业务代码和 S
 从平台架构而言，Kubernetes的设计围绕平台化理念，强调插件化设计与易扩展性，这是它与其他同类系统的最大区别之一，保障了对各种不同客户应用场景的普遍适应性。另外，Kubernetes与其他容器编排系统的显著区别是Kubernetes并不把无状态化、微服务化等条件作为可运行的工作负载的约束。
 如今，容器技术已经进入产业落地期，而Kubernetes作为容器平台的标准已经得到了广泛应用。
 </code></pre>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588139405276.png" alt="1588139405276"></p>
+<p><img src="/.io//1588139405276.png" alt="1588139405276"></p>
 <h3 id="2-4-2-Istio是Kubernetes的好帮手"><a href="#2-4-2-Istio是Kubernetes的好帮手" class="headerlink" title="2.4.2 Istio是Kubernetes的好帮手"></a>2.4.2 Istio是Kubernetes的好帮手</h3><pre><code>从场景来看，Kubernetes已经提供了非常强大的应用负载的部署、升级、扩容等运行管理能力。Kubernetes 中的 Service 机制也已经可以做服务注册、服务发现和负载均衡，支持通过服务名访问到服务实例。
 从微服务的工具集观点来看，Kubernetes本身是支持微服务的架构，在Pod中部署微服务很合适，也已经解决了微服务的互访互通问题，但对服务间访问的管理如服务的熔断、限流、动态路由、调用链追踪等都不在Kubernetes的能力范围内。那么，如何提供一套从底层的负载部署运行到上层的服务访问治理端到端的解决方案？
 目前，最完美的答案就是在Kubernetes上叠加Istio这个好帮手
 </code></pre>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588477669403.png" alt="1588477669403"></p>
+<p><img src="/.io//1588477669403.png" alt="1588477669403"></p>
 <h3 id="2-4-3-Kubernetes是Istio的好基座"><a href="#2-4-3-Kubernetes是Istio的好基座" class="headerlink" title="2.4.3 Kubernetes是Istio的好基座"></a>2.4.3 Kubernetes是Istio的好基座</h3><blockquote>
 <p>Istio最大化地利用了Kubernetes这个基础设施，与之叠加在一起形成了一个更强大的用于进行服务运行和治理的基础设施，充分利用了Kubernetes的优点实现Istio的功能，例如：</p>
 <p>1.数据面</p>
 <pre><code>数据面Sidecar运行在Kubernetes的Pod里，作为一个Proxy和业务容器部署在一起。在服务网格的定义中要求应用程序在运行的时感知不到Sidecar的存在。而基于Kubernetes的一个 Pod 多个容器的优秀设计使得部署运维
 对用户透明，用户甚至感知不到部署 Sidecar的过程。用户还是用原有的方式创建负载，通过 Istio 的自动注入服务，可以自动给指定的负载注入Proxy。如果在另一种环境下部署和使用Proxy，则不会有这样的便利。
 </code></pre>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588477896348.png" alt="1588477896348"></p>
+<p><img src="/.io//1588477896348.png" alt="1588477896348"></p>
 <p>2.统一服务发现<br>Istio的服务发现机制非常完美地基于Kubernetes的域名访问机制构建而成，省去了再搭一个类似 Eureka 的注册中心的麻烦，更避免了在 Kubernetes 上运行时服务发现数据不一致的问题。</p>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588478040105.png" alt="1588478040105"></p>
+<p><img src="/.io//1588478040105.png" alt="1588478040105"></p>
 <p>3.基于Kubernetes CRD描述规则<br>Istio的所有路由规则和控制策略都是通过 Kubernetes CRD实现的，因此各种规则策略对应的数据也被存储在 Kube-apiserver 中，不需要另外一个单独的 APIServer 和后端的配置管理。所以，可以说Istio的APIServer就是Kubernetes的APIServer，数据也自然地被存在了对应Kubernetes的etcd中。</p>
 <p>Istio非常巧妙地应用了Kubernetes这个好基座，基于Kubernetes的已有能力来构建自身功能。Kubernetes里已经有的，绝不再自己搞一套，避免了数据不一致和用户使用体验的问题。</p>
 <p>Istio和Kubernetes架构的关系，可以看出，Istio不仅数据面Envoy跑在Kubernetes的Pod里，其控制面也运行在Kubernetes集群中，其控制面组件本身存在的形式也是以Kubernetes Deployment和Service，基于Kubernetes扩展和构建。</p>
@@ -532,12 +532,12 @@ Deployment 负责 Kubernetes 如何创建和更新应用程序的实例。
 </code></pre>
 <h2 id="2-5-Istio与服务网格"><a href="#2-5-Istio与服务网格" class="headerlink" title="2.5 Istio与服务网格"></a>2.5 Istio与服务网格</h2><h3 id="2-5-1-时代选择服务网格"><a href="#2-5-1-时代选择服务网格" class="headerlink" title="2.5.1 时代选择服务网格"></a>2.5.1 时代选择服务网格</h3><blockquote>
 <p>在云原生时代，随着采用各种语言开发的服务剧增，应用间的访问拓扑更加复杂，治理需求也越来越多。原来的那种嵌入在应用中的治理功能无论是从形态、动态性还是可扩展性来说都不能满足需求，迫切需要一种具备云原生动态、弹性特点的应用治理基础设施。</p>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588498675957.png" alt="1588498675957"></p>
+<p><img src="/.io//1588498675957.png" alt="1588498675957"></p>
 <p>采用Sidecar代理与应用进程的解耦带来的是应用完全无侵入、也屏蔽了开发语言无关等特点解除了开发语言的约束，从而极大降低了应用开发者的开发成本。</p>
 <p>这种方式也经常被称为一种应用的基础设施层，类比TCP&#x2F;IP网络协议栈，应用程序像使用TCP&#x2F;IP一样使用这个通用代理：TCP&#x2F;IP 负责将字节码可靠地在网络节点之间传递，Sidecar 则负责将请求可靠地在服务间进行传递。TCP&#x2F;IP 面向的是底层的数据流，Sidecar 则可以支持多种高级协议（HTTP、gRPC、HTTPS 等），以及对服务运行时进行高级控制，使服务变得可监控、可管理。</p>
 <p>然后，从全局来看，在多个服务间有复杂的互相访问时才有服务治理的需求。即我们关注的是这些 Sidecar 组成的网格，对网格内的服务间访问进行管理，应用还是按照本来的方式进行互相访问，每个应用程序的入口流量和出口流量都要经过Sidecar代理，并在Sidecar上执行治理动作。</p>
 <p>最后，Sidecar是网格动作的执行体，全局的管理规则和网格内的元数据维护需要通过一个统一的控制面实现。<br>Sidecar拦截入口流量，执行治理动作。这就引入两个问题：<br>◎ 增加了两处延迟和可能的故障点；<br>◎ 多出来的这两跳对于访问性能、整体可靠性及整个系统的复杂度都带来了新的挑战。</p>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588498713156.png" alt="1588498713156"></p>
+<p><img src="/.io//1588498713156.png" alt="1588498713156"></p>
 <p>所以，对于考虑使用服务网格的用户来说，事情就会变成一个更简单的选择题：是否愿意花费额外的资源在这些基础设施上来换取开发、运维的灵活性、业务的非侵入性和扩展性等便利。</p>
 <p>目前，华为、谷歌、亚马逊等云服务厂商将这种服务以云服务形态提供了出来，并和底层的基础设施相结合，提供了完整的服务治理解决方案。这对于广大应用开发者来说，更加方便和友好。</p>
 </blockquote>
@@ -551,7 +551,7 @@ Deployment 负责 Kubernetes 如何创建和更新应用程序的实例。
 <p>云原生社区的定位与多个云厂商的规划也不谋而合。华为云已经在 2018 年 8 月率先在其容器服务CCE（Cloud Container Engine）中内置Istio；Google的GKE也在2018年12月宣布内置 Istio；越来越多的云厂商也已经选择将 Istio作为其容器平台的一部分提供给用户，即提供一套开箱即用的容器应用运行治理的全栈服务。正因为看到了 Istio 在技术和产品上的巨大潜力，各大厂商在社区的投入也在不断加大，其中包括Google、IBM、华为、思科、红帽等主流厂商。</p>
 </blockquote>
 <p><strong>istio原理图</strong></p>
-<p><img src="/ServiceMesh%E4%BB%8B%E7%BB%8D.assets/1588498993067.png" alt="1588498993067"></p>
+<p><img src="/.io//1588498993067.png" alt="1588498993067"></p>
 <p><strong>总结</strong></p>
 <pre><code>时代选择服务网格是因为架构的发展
 服务网格选择istio是因为提供一套开箱即用的容器应用运行治理的全栈服务
@@ -566,7 +566,7 @@ Deployment 负责 Kubernetes 如何创建和更新应用程序的实例。
   </div>
 </a>
 <a class="page_down" href="/2023/02/09/wget/"
-style="background-image:url(/assets/images/random/27.jpg)">
+style="background-image:url(/assets/images/random/33.jpg)">
 <div class="inner"><span>下一篇:</span>
   <p>wget下载整个网站(整个子目录)或特定目录</p>
 </div>
